@@ -105,4 +105,35 @@ PS C:\users\century3\desktop> (Get-ChildItem | Measure-Object).Count
 
 ## Century 4 -> 5 :
 
+The password for Century5 is the name of the file within a directory on the desktop that has spaces in its name.
+
+NOTE:
+– The password will be lowercase no matter how it appears on the screen.
+
+```
+PS C:\users\century4\desktop> cd '.\Can You Open Me'
+PS C:\users\century4\desktop\Can You Open Me> Get-ChildItem
+
+
+    Directory: C:\users\century4\desktop\Can You Open Me
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        2/14/2024   2:35 PM             24 34182
+
+PS C:\users\century4\desktop\Can You Open Me> type .\34182
+Great Work!  Keep it up.
+```
+
+> Creds - `century5:34182`
+
+## Century 5 -> 6 :
+
+The password for Century6 is the short name of the domain in which this system resides in PLUS the name of the file on the desktop.
+
+NOTE:
+– If the short name of the domain is “blob” and the file on the desktop is named “1234”, the password would be “blob1234”.
+– The password will be lowercase no matter how it appears on the screen.
+
 
