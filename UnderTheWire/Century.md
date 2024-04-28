@@ -2,7 +2,6 @@ Link - https://underthewire.tech/century
 
 ## Century 0 -> 1 :
 
-```
 The goal of this level is to log into the game. Do the following in order to achieve this goal.
 
 1. Obtain the initial credentials via the #StartHere channel on our Slack (link). Once you are in the channel, scroll to the top to see the credentials.
@@ -12,7 +11,7 @@ The goal of this level is to log into the game. Do the following in order to ach
 3. When prompted, use the credentials for the applicable game found in the #StartHere Slack channel.
 
 4. You have successfully connected to the game server when your path changes to “PS C:\Users\Century1\desktop>”.
-```
+
 
 > Creds - `century:century1`
 
