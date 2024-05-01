@@ -40,7 +40,7 @@ NOTE:
 – Include all periods
 – Be sure to look for build version and NOT PowerShell version
 
-```
+```powershell
 PS C:\users\century1> $PSVersionTable
 
 Name                           Value
@@ -64,7 +64,7 @@ NOTE:
 – If the name of the cmdlet is `get-web` and the file on the desktop is named `1234`, the password would be `get-web1234`.
 – The password will be lowercase no matter how it appears on the screen.
 
-```
+```powershell
 PS C:\users\century2\desktop> gal wget
 
 CommandType     Name                                               Version    Source
@@ -89,7 +89,7 @@ Mode                LastWriteTime         Length Name
 
 The password for Century4 is the number of files on the desktop.
 
-```
+```powershell
 PS C:\users\century3\desktop> Get-ChildItem | Measure-Object
 
 
@@ -112,7 +112,7 @@ The password for Century5 is the name of the file within a directory on the desk
 NOTE:
 – The password will be lowercase no matter how it appears on the screen.
 
-```
+```powershell
 PS C:\users\century4\desktop> cd '.\Can You Open Me'
 PS C:\users\century4\desktop\Can You Open Me> Get-ChildItem
 
@@ -137,5 +137,103 @@ The password for Century6 is the short name of the domain in which this system r
 NOTE:
 – If the short name of the domain is “blob” and the file on the desktop is named “1234”, the password would be “blob1234”.
 – The password will be lowercase no matter how it appears on the screen.
+
+```powershell
+PS C:\users\century5\desktop> Get-WMIObject -Class Win32_ComputerSystem
+
+
+Domain              : underthewire.tech
+Manufacturer        : OpenStack Foundation
+Model               : OpenStack Nova
+Name                : UTW
+PrimaryOwnerName    : UTW_Team
+TotalPhysicalMemory : 12582359040
+
+PS C:\users\century5\desktop> Get-ChildItem
+
+    Directory: C:\users\century5\desktop
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        8/30/2018   3:29 AM             54 3347
+```
+> Creds - `century6:underthewire3347`
+
+## Century 6 -> 7 :
+
+The password for Century7 is the number of folders on the desktop.
+
+```powershell
+PS C:\users\century6\desktop> (Get-ChildItem).count
+197
+```
+
+> Creds - `century7:197`
+
+## Century 7 -> 8 :
+
+The password for Century8 is in a readme file somewhere within the contacts, desktop, documents, downloads, favorites, music, or videos folder in the user’s profile.
+
+NOTE:
+– The password will be lowercase no matter how it appears on the screen.
+
+```powershell
+PS C:\users\century7> Get-ChildItem -Path C:\users\century7 -File -Include *README* -Recurse -ErrorAction Silentlycontinue
+
+
+    Directory: C:\users\century7\Downloads
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        8/30/2018   3:29 AM              7 Readme.txt
+
+
+PS C:\users\century7> Get-Content C:\users\century7\Downloads\Readme.txt
+7points
+```
+> Creds - `century8:7points`
+
+## Century 8 -> 9 :
+
+The password for Century9 is the number of unique entries within the file on the desktop.
+
+```powershell
+PS C:\users\century8\desktop> Get-ChildItem
+
+
+    Directory: C:\users\century8\desktop
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        8/30/2018   3:33 AM          15858 unique.txt
+
+PS C:\users\century8\desktop> (Get-Content .\unique.txt | unique).count
+696
+```
+
+> Creds - `century9:696`
+
+## Century 9 -> 10 :
+
+The password for Century10 is the 161st word within the file on the desktop.
+
+NOTE:
+– The password will be lowercase no matter how it appears on the screen.
+
+```powershell
+PS C:\users\century9\desktop> Get-Content .\Word_File.txt -Delimiter " " | Select-Object -Index 160
+pierid
+```
+> Creds - `century10:pierid`
+
+## Century 10 -> 11 :
+
+The password for Century11 is the 10th and 8th word of the Windows Update service description combined PLUS the name of the file on the desktop.
+
+NOTE:
+– The password will be lowercase no matter how it appears on the screen.
+– If the 10th and 8th word of the service description is “apple” and “juice” and the name of the file on the desktop is “88”, the password would be “applejuice88”.
 
 
