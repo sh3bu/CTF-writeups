@@ -317,7 +317,7 @@ Mode                LastWriteTime         Length Name
 
 > Creds - `century11:windowsupdates110`
 
-## Century 10 -> 11 :
+## Century 11 -> 12 :
 
 The password for Century12 is the name of the hidden file within the contacts, desktop, documents, downloads, favorites, music, or videos folder in the user’s profile.
 
@@ -325,5 +325,107 @@ NOTE:
 – Exclude “desktop.ini”.
 – The password will be lowercase no matter how it appears on the screen.
 
+```powershell
+PS C:\users\century11> Get-ChildItem -Force -Path C:\users\century11 -recurse -File -ErrorAction SilentlyContinue
 
+    Directory: C:\users\century11\Downloads
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+--rh--        8/30/2018   3:34 AM             30 secret_sauce
+```
+> Creds - `century12:secret_sauce`
+
+## Century 12 -> 13 :
+
+The password for Century13 is the description of the computer designated as a Domain Controller within this domain PLUS the name of the file on the desktop.
+
+NOTE:
+– The password will be lowercase no matter how it appears on the screen.
+– If the description “today_is” and the file on the desktop is named “_cool”, the password would be “today_is_cool”.
+
+```powershell
+PS C:\users\century11> Get-ADDomainController
+
+
+ComputerObjectDN           : CN=UTW,OU=Domain Controllers,DC=underthewire,DC=tech
+DefaultPartition           : DC=underthewire,DC=tech
+Domain                     : underthewire.tech
+Enabled                    : True
+Forest                     : underthewire.tech
+HostName                   : utw.underthewire.tech
+InvocationId               : 09ee1897-2210-4ac9-989d-e19b4241e9c6
+IPv4Address                : 192.99.167.156
+IPv6Address                :
+IsGlobalCatalog            : True
+IsReadOnly                 : False
+LdapPort                   : 389
+Name                       : UTW
+NTDSSettingsObjectDN       : CN=NTDS Settings,CN=UTW,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC
+                             =underthewire,DC=tech
+OperatingSystem            : Windows Server 2016 Standard
+OperatingSystemHotfix      :
+OperatingSystemServicePack :
+OperatingSystemVersion     : 10.0 (14393)
+OperationMasterRoles       : {SchemaMaster, DomainNamingMaster, PDCEmulator, RIDMaster...}
+Partitions                 : {DC=ForestDnsZones,DC=underthewire,DC=tech, DC=DomainDnsZones,DC=underthewire,DC=tech,
+                             CN=Schema,CN=Configuration,DC=underthewire,DC=tech,
+                             CN=Configuration,DC=underthewire,DC=tech...}
+ServerObjectDN             : CN=UTW,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=underthewire,DC=
+                             tech
+ServerObjectGuid           : df17c8a3-dd76-438b-8ddf-b7ad3e624618
+Site                       : Default-First-Site-Name
+SslPort                    : 636
+
+# Now we got the computer name as `UTW`. Now using the below cmdlet, we can get the description of the computer.
+
+PS C:\users\century12\desktop> Get-ADComputer -Filter {Name -eq "UTW"} -Properties Description
+
+Description       : i_authenticate
+DistinguishedName : CN=UTW,OU=Domain Controllers,DC=underthewire,DC=tech
+DNSHostName       : utw.underthewire.tech
+Enabled           : True
+Name              : UTW
+ObjectClass       : computer
+ObjectGUID        : 5ca56844-bb73-4234-ac85-eed2d0d01a2e
+SamAccountName    : UTW$
+SID               : S-1-5-21-758131494-606461608-3556270690-1000
+UserPrincipalName :
+
+PS C:\users\century12\desktop> Get-ChildItem
+
+    Directory: C:\users\century12\desktop
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        8/30/2018   3:34 AM             30 _things
+
+```
+
+> Creds - `century13:i_authenticate_things`
+
+## Century 13 -> 14 :
+
+The password for Century14 is the number of words within the file on the desktop.
+
+```
+PS C:\users\century13\desktop> type .\countmywords -Delimiter " " | measure
+
+
+Count    : 755
+Average  :
+Sum      :
+Maximum  :
+Minimum  :
+Property :
+```
+
+> Creds - `century14:755`
+
+## Century 14 -> 15 :
+
+The password for Century15 is the number of times the word “polo” appears within the file on the desktop.
+
+NOTE:
+– You should count the instances of the whole word only..
 
