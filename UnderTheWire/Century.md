@@ -408,7 +408,7 @@ Mode                LastWriteTime         Length Name
 
 The password for Century14 is the number of words within the file on the desktop.
 
-```
+```powershell
 PS C:\users\century13\desktop> type .\countmywords -Delimiter " " | measure
 
 
@@ -429,3 +429,62 @@ The password for Century15 is the number of times the word “polo” appears wi
 NOTE:
 – You should count the instances of the whole word only..
 
+```powershell
+PS C:\users\century14\desktop> Get-Content .\countpolos -Delimiter " " | Select-string -pattern "polo"
+
+polo
+polo
+anthropologies
+polo
+polo
+carpology
+polo
+polo
+polo
+polo
+polo
+polo
+carpologically
+polo
+polo
+polo
+polo
+polo
+pol
+polo
+polo
+pseudoanthropological
+polo
+anthropologic
+polo
+polo
+polo
+
+
+PS C:\users\century14\desktop> Get-Content .\countpolos -Delimiter " " | Select-string -pattern "^polo"
+polo
+polo
+polo
+..
+..
+polo
+polo
+polo
+
+
+
+PS C:\users\century14\desktop> (Get-Content .\countpolos -Delimiter " " | Select-string -pattern "^polo").count
+153
+```
+
+> Creds - `century15:153`
+
+## Century 15 :
+
+Congratulations!
+
+You have successfully made it to the end!
+
+Try your luck with other games brought to you by the Under The Wire team.
+
+Thanks for playing! 🚩✅
