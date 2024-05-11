@@ -178,5 +178,126 @@ As you can see, we don't have anything to test with our simple PHP web applicati
 
 **Deployment**
 
-In the deployment stage, we want to deploy our application to the relevant environment if both the build and test stages succeed. Usually, branches are used in source code repos, with the main branch being the only one that can deploy to production. Other branches will deploy to environments such as DEV or UAT. Let's take a look at what we are doing in the deployment job:
+In the deployment stage, we want to deploy our application to the relevant environment if both the build and test stages succeed. Usually, branches are used in source code repos, with the main branch being the only one that can deploy to production. Other branches will deploy to environments such as **_DEV or UAT_**. Let's take a look at what we are doing in the deployment job:
+
+```yml
+deploy-prod:
+  stage: deploy
+  script:
+- echo "This job deploys something from the $CI_COMMIT_BRANCH branch."
+    - echo "Making the website directory"
+    - mkdir -p /tmp/time/cicd
+    - echo "Copying the website files"
+    - cp website_src/* /tmp/time/cicd/
+    - echo "Hosting website using a screen"
+    - screen -d -m php -S 127.0.0.1:8081 -t /tmp/time/cicd/ &    
+    - echo "Deployment complete! Navigate to http://localhost:8081/ to test!"
+  environment: production
+```
+
+- The first step of the deploy job is to create a new directory under **/tmp/** where we can place our web application.
+- We then copy the web application files to the directory and alter the permissions of the files.
+- Once done, host the application, making use of PHP. Now, we are ready to launch our application!
+- CI files can become a lot more complex as there are a lot more sections and keywords that you could use.
+
+ Now that we better understand the embedded automation, let's look at actually using it. To have the build execute, we need to register a **runner**.
+
+**Runner Registration**
+
+In Gitlab, we use **runners to execute the tasks configured in the project**. 
+
+In our project, click on Settings and then CI/CD:
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/a47289ae-7595-4c45-85e0-8e3156a53562)
+
+Expand the Runners section, 
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/40a591ee-5bc9-4ef2-be1e-6d7d7f0c23a1)
+
+Here, we will be able to _configure a new runner_ for your project. 
+
+### Download & install binary :
+
+```bash
+┌──(kali㉿kali)-[~]
+└─$ sudo curl -L --output /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 62.2M  100 62.2M    0     0  58167      0  0:18:41  0:18:41 --:--:-- 52452
+                                                                                                                                                                              
+┌──(kali㉿kali)-[~]
+└─$ sudo chmod +x /usr/local/bin/gitlab-runner
+
+[sudo] password for kali: 
+                                                                                                                                                                              
+┌──(kali㉿kali)-[~]
+└─$ sudo useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/bash
+                                                                                                                                                                              
+┌──(kali㉿kali)-[~]
+└─$ sudo gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
+Runtime platform                                    arch=amd64 os=linux pid=5103 revision=535ced5f version=16.11.1
+                                                                                                                                                                              
+┌──(kali㉿kali)-[~]
+└─$ sudo gitlab-runner start
+Runtime platform                                    arch=amd64 os=linux pid=5337 revision=535ced5f version=16.11.1
+```
+
+### Register a runner :
+
+```bash                                                                                                                                                                 
+┌──(kali㉿kali)-[~]
+└─$ sudo gitlab-runner register --url http://gitlab.tryhackme.loc/ --registration-token GR1348941cKb13-SjqLAV7c6NpGqC
+Runtime platform                                    arch=amd64 os=linux pid=5523 revision=535ced5f version=16.11.1
+Running in system-mode.                            
+                                                   
+Enter the GitLab instance URL (for example, https://gitlab.com/):
+[http://gitlab.tryhackme.loc/]: 
+Enter the registration token:
+[GR1348941cKb13-SjqLAV7c6NpGqC]: 
+Enter a description for the runner:
+[kali]: runner-kali
+Enter tags for the runner (comma-separated):
+production
+Enter optional maintenance note for the runner:
+
+WARNING: Support for registration tokens and runner parameters in the 'register' command has been deprecated in GitLab Runner 15.6 and will be replaced with support for authentication tokens. For more information, see https://docs.gitlab.com/ee/ci/runners/new_creation_workflow 
+Registering runner... succeeded                     runner=GR1348941cKb13-Sj
+Enter an executor: custom, shell, virtualbox, docker-windows, instance, docker-autoscaler, ssh, parallels, docker, docker+machine, kubernetes:
+shell
+
+Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded!
+ 
+Configuration (with the authentication token) was saved in "/etc/gitlab-runner/config.toml"
+```
+Now when we refresh the page, we can see the runner.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/b6a8f4c9-68f7-4d0e-bc79-0e15b59d7139)
+
+Our runnner will only run jobs without any tags. It is made so since our lab environment doesnt have any job with tags.
+
+Since we have a simple job, we can just tell our runner to execute all jobs. Click the little pencil icon and click Run untagged jobs & Save:
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/d85a1926-8e6e-42b7-b4c9-1524370773a1)
+
+**Build Automation**
+
+Now that the runner is registered, we can test the build process by making a new commit. The easiest change to make that would kick off a build is to update the _README.md_ file.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/76ce209f-f341-4b98-8548-a4b39d896b0e)
+
+Once done, our build process will have started! We can follow the process by clicking on `Build` and then `Pipelines`.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/769d5131-31fe-4187-9823-c9473f022ff1)
+
+Once completed, our application will have been deployed! We can verify this by navigating to http://127.0.0.1:8081/, and we should be met by the web application homepage.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/b8c90968-a624-4b04-938a-4ce939fd4cd0)
+
+_We have now created our very own CI/CD pipeline and build process!_****
+
+> 1. What is the name of the build agent that can be used with Gitlab? - `Gitlab runner`
+> 2. What is the value of the flag you receive once authenticated to Timekeep? - `THM{W*********ines}`
+ ![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/48333c21-c24a-4072-a243-f2ea8ad508f4)
+
+
 
