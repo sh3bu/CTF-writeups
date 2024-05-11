@@ -1,4 +1,15 @@
-## Network :
+
+
+## Task 1 : Introduction
+
+
+Learn about CI/CD and build principles to safeguard your pipelines.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/32852a82-be3f-4ab3-b1c2-55370cc64204)
+
+> No answer needed.
+
+### Network diagram :
 
 ![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/1b59ce2d-6bc1-4aee-8728-e1d16776009b)
 
@@ -9,15 +20,6 @@ So what does a typical CI/CD-enabled pipeline look like? The network diagram of 
 - **Build orchestrator** - Coordinates and manages the automation of the build and deployment environments. Both `Gitlab and Jenkins` are used as build servers in this network.
 - **Build agents** - These machines build, test and package the code. We are using `GitLab runners and Jenkins agents` for our build agents.
 - **Environments** - Briefly mentioned above, there are typically environments for development, testing (staging) and production (live code). The code is built and validated through the stages. In our network, we have both a `DEV and PROD` environment.
-
-## Task 1 : Introduction
-
-
-Learn about CI/CD and build principles to safeguard your pipelines.
-
-![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/32852a82-be3f-4ab3-b1c2-55370cc64204)
-
-> No answer needed.
 
 ## Task 2 : Setting up
 
