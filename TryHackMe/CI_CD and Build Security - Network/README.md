@@ -12,6 +12,7 @@ So what does a typical CI/CD-enabled pipeline look like? The network diagram of 
 
 ## Task 1 : Introduction
 
+
 Learn about CI/CD and build principles to safeguard your pipelines.
 
 ![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/32852a82-be3f-4ab3-b1c2-55370cc64204)
