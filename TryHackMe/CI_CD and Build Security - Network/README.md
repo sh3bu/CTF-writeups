@@ -297,7 +297,8 @@ _We have now created our very own CI/CD pipeline and build process!_****
 
 > 1. What is the name of the build agent that can be used with Gitlab? - `Gitlab runner`
 > 2. What is the value of the flag you receive once authenticated to Timekeep? - `THM{W*********ines}`
- ![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/48333c21-c24a-4072-a243-f2ea8ad508f4)
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/48333c21-c24a-4072-a243-f2ea8ad508f4)
 
 ## Task 5 : Securing the Build Source 
 
@@ -381,6 +382,15 @@ Downloading project: Mobile App
 'Basic Build_9e2c0ebb-172c-48c3-9e79-629821abbb4b.zip'     enumerate.py                                           'Mobile App_1006c61c-eeca-4b02-b8ba-1b138538eb4e.zip'
 
 ```
+Now we can unzip all the zip files & use `grep -R` to search for hardcodede API keys which is the flag.
+
+```bash
+┌──(root㉿kali)-[/home/kali/thm/CI_CD and Build Security/unzip]
+└─# grep -R "API" ./   
+./mobile-app-master-7a790d318f6ff34861b7903cf61d1810b67cf741/Dockerfile:ENV ANDROID_API_KEY "THM{You.Found.The.API.Key}"
+./mobile-app-master-7a790d318f6ff34861b7903cf61d1810b67cf741/README.md:up your secret API key. The stub code is here for that, but please see our
+./mobile-app-master-7a790d318f6ff34861b7903cf61d1810b67cf741/app/app.iml:    <orderEntry type="jdk" jdkName="Android API 28 Platform" jdkType="Android SDK" />
+```
 
 ### Securing the Build Source -
 
@@ -394,3 +404,10 @@ In GitLab, group-based access control is a powerful mechanism that simplifies pe
 1. **GitLab's .gitignore :** This file specifies which files or directories should be excluded from version control. It's crucial for preventing sensitive data like passwords, API keys, and configuration files from being committed to repositories.
 2. **Environment Variables :** GitLab allows you to define and manage environment variables securely, separate from the source code. This is especially useful for storing sensitive data needed during the CI/CD process without exposing it in the repository.
 3. **Branch Protection :** Branches, like master or main, can be protected to prevent direct pushes, ensuring that changes go through code review and automated testing before merging.
+
+> 1. Which file specifies which directories and files should be excluded for version control? - `.gitignore`
+> 2. What can you protect to ensure direct pushes and vulnerable code changes are avoided? - `branches`
+> 3. What issue does lack of access control and unauthorised code changes lead to? - `Unauthorised Tampering` 
+> 4. What is the API key stored within the Mobile application that can be accessed by any Gitlab user? - `THM{You.Found.The.API.Key}`
+
+
