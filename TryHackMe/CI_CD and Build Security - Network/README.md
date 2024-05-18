@@ -291,9 +291,10 @@ Once done, our build process will have started! We can follow the process by cli
 
 Once completed, our application will have been deployed! We can verify this by navigating to http://127.0.0.1:8081/, and we should be met by the web application homepage.
 
-![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/b8c90968-a624-4b04-938a-4ce939fd4cd0)
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/d43834d4-f850-4ff8-8146-77a099315fa4)
 
-_We have now created our very own CI/CD pipeline and build process!_****
+
+_We have now created our very own CI/CD pipeline and build process!_
 
 > 1. What is the name of the build agent that can be used with Gitlab? - `Gitlab runner`
 > 2. What is the value of the flag you receive once authenticated to Timekeep? - `THM{W*********ines}`
