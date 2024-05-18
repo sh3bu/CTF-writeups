@@ -638,6 +638,24 @@ gitlab-runner@ip-10-200-94-201:~/builds/RYStXjj2/0/ash/approval-test$ id
 id
 uid=1001(gitlab-runner) gid=1001(gitlab-runner) groups=1001(gitlab-runner)
 ```
+### Protecting the Pipeline -
+
+Protecting your GitLab CI/CD pipeline is essential to ensure the security of your code and infrastructure. Some of the steps are :
+
+- **Limit Branch Access** - Restrict who can push to the main branch. Only trusted developers should have the ability to push code to this branch. You can do this by configuring branch protection rules in your GitLab repository settings. Navigate to Settings > Repository > Default branch. Configure the rules to require reviews before allowing changes.
+
+- **Review Merge Requests** - Enforce merge requests (or pull requests) to make main branch changes. Merge requests provide a way to review and approve code changes before merging. You can configure a merge request approvals to ensure multiple team members review and approve changes.
+
+- **Use CI/CD Variables** - Avoid storing sensitive information directly in your .gitlab-ci.yml file. Instead, use GitLab CI/CD variables to store secrets like API keys, passwords, and tokens. These variables can be protected and restricted to specific branches and tags.
+
+- **Limit Runner Access** - Only allow trusted runners to execute CI/CD jobs. By specifying tags, you can register runners with specific tags and then restrict which runners can be used for jobs in your .gitlab-ci.yml file. Only runners with the appropriate tags can run jobs on the main branch.
+
+- **Access Control and Permissions** - Review and configure project-level and group-level access controls and permissions. It's always good to review and ensure you have the least privilege by checking the project's settings and modifying the CI/CD configuration if necessary.
+
+- **Regular Audits** - Conduct regular security audits of your GitLab configuration and CI/CD pipeline. Review who has access and permissions and ensure that best practices are followed.
+
+- **Monitor and Alert** - Set up monitoring and alerting for your pipeline. Implement security monitoring solutions to detect unusual or unauthorised activities in your GitLab environment and CI/CD pipeline.
+
 
 > 1. What can we add so that merges are raised for review instead of pushing the changes to code directly? - `merge requests`
 > 2. What should we do so that only trusted runners execute CI/CD jobs? - `limit runner access`
