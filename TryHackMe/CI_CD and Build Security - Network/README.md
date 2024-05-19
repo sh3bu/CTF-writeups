@@ -914,8 +914,8 @@ Go to the GitLab project.
 2. Add a new variable, select the "Masked" checkbox, and provide the value.
 3. Once you've added a secure variable, you can use it in your .gitlab-ci.yml file without worrying about it being exposed in logs.
 
-> 1. Is using environment variables enough to protect the build secrets? (yay or nay) - nay
-> 2. What is the value of the PROD API_KEY? - THM{Secr***************.Secret}
+> 1. Is using environment variables enough to protect the build secrets? (yay or nay) - `nay`
+> 2. What is the value of the PROD API_KEY? - `THM{Secr***************.Secret}`
 
 ## Task 11 : Conclusion
 
