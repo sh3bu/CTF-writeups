@@ -365,9 +365,11 @@ document.addEventListener("DOMContentLoaded", function () {
 	}
 ```
 
-Since this room is based on HTTP request smuggling, I thought that might also be the way here for the secodn flag.
+Since this room is based on HTTP request smuggling, I thought that might also be the way here for the seconD flag.
 
 ### HTTP/2 Desync Attacks
+
+> The following blog post by James Kettle explains this in depth  - https://portswigger.net/research/http2 
 
 #### Request Smuggling via HTTP/2 Downgrades -
 
@@ -375,20 +377,7 @@ HTTP/2 downgrading is when a **front-end server speaks HTTP/2 with clients**, bu
 
 ![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/d48f2275-1ce4-4c87-abbf-da4e167e5c23)
 
-Classic request smuggling vulnerabilities mostly occur because the front-end and back-end disagree about whether to derive a request's length from its Content-Length (CL), or Transfer-Encoding (TE) header. Depending on which way around this desynchronization happens, the vulnerability is classified as CL.TE or TE.CL.
 
-Here, the front-end server uses the Content-Length header and the back-end server uses the Transfer-Encoding header. We can perform a simple HTTP request smuggling attack as follows:
-
-```http
-POST / HTTP/1.1
-Host: vulnerable-website.com
-Content-Length: 13
-Transfer-Encoding: chunked
-
-0
-
-SMUGGLED
-```
 #### H2 request smuggling -
 
 H2 request smuggling is essentially a variant of request smuggling, but instead of a confusion about the headers Content-Length and chunked encoding, **H2 request smuggling takes advantage of H2 compatible proxies rewriting H2 requests into HTTP/1.1**. 
