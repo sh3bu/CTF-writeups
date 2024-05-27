@@ -365,4 +365,33 @@ document.addEventListener("DOMContentLoaded", function () {
 	}
 ```
 
-Since this room
+Since this room is based on HTTP request smuggling, I thought that might also be the way here for the secodn flag.
+
+### HTTP/2 Desync Attacks
+
+#### Request Smuggling via HTTP/2 Downgrades -
+
+HTTP/2 downgrading is when a **front-end server speaks HTTP/2 with clients**, but r**ewrites requests into HTTP/1.1 before forwarding them on to the back-end server**. This protocol translation enables a range of attacks, including HTTP request smuggling:
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/d48f2275-1ce4-4c87-abbf-da4e167e5c23)
+
+Classic request smuggling vulnerabilities mostly occur because the front-end and back-end disagree about whether to derive a request's length from its Content-Length (CL), or Transfer-Encoding (TE) header. Depending on which way around this desynchronization happens, the vulnerability is classified as CL.TE or TE.CL.
+
+Here, the front-end server uses the Content-Length header and the back-end server uses the Transfer-Encoding header. We can perform a simple HTTP request smuggling attack as follows:
+
+```http
+POST / HTTP/1.1
+Host: vulnerable-website.com
+Content-Length: 13
+Transfer-Encoding: chunked
+
+0
+
+SMUGGLED
+```
+#### H2 request smuggling -
+
+H2 request smuggling is essentially a variant of request smuggling, but instead of a confusion about the headers Content-Length and chunked encoding, **H2 request smuggling takes advantage of H2 compatible proxies rewriting H2 requests into HTTP/1.1**. 
+
+One of the things that can go wrong in this conversion is that the **content length is not required in HTTP/2 [rfc7540]** due to H2’s frame structure. However, **if an incorrect content length is specified in the H2 request and written to the new HTTP/1.1 request without any checks, a confusion can arise between the server where a request starts and ends**.
+
