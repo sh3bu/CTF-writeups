@@ -241,7 +241,7 @@ The key thing to note here are these 2 endpoints: `/admin-creds` & `/admin-flag`
 
 ![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/fa9955cb-1a51-4af2-a987-bfda114cba98)
 
-## First flag
+## First flag :
 
 The NGINX proxy does not allow us to access those 2 endpoints by sending a **403 Forbidden** page.
 
@@ -365,7 +365,9 @@ document.addEventListener("DOMContentLoaded", function () {
 	}
 ```
 
-Since this room is based on HTTP request smuggling, I thought that might also be the way here for the seconD flag.
+Since this room is based on HTTP request smuggling, I thought that might also be the way here for the second flag.
+
+## Second flag :
 
 ### HTTP/2 Desync Attacks
 
@@ -415,7 +417,7 @@ To get the request sent by another user, we can send a smuggled request as follo
 
 The request will be in waiting state as the server expects a response content of length 800. Once the victim user performs any action, the request will get appended to our smuggled request & we will get a response of **503 Service Unavailable**.
 
-After a minute,we will get a response of **503 Service Unavailable** which indicates that victim has sent a request which has filled the remaining Content-Length of our smuggled request.Now when we request the `/getMessages` endpoint, we can see the request made from Jack user. The cookie of Jack's account contains the flag.
+After a minute,we will get a response of **503 Service Unavailable** which indicates that victim has sent a request which has filled the remaining Content-Length of our smuggled request.Now when we request the `/getMessages` endpoint, we can see the request made from Jack user. The cookie of Jack's account contains the second flag.
 
 ![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/6b514f84-310d-4742-92a1-da7784232bf6)
 
