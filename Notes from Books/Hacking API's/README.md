@@ -21,3 +21,53 @@
 
 - GraphQL is Query-centric.
 - In REST API's, a specific endpoint will return all the data it is supposed to but incase of GraphQL we can query specifically the info that we want.
+
+#### SOAP API
+
+- SOAP is one of the older web APIs that works over HTTP, SMTP, TCP, and UDP, it was primarily designed for use over HTTP. When SOAP is used over HTTP, the requests are all made using _HTTP POST_.
+**SOAP Request -**
+```http
+POST /Inventory HTTP/1.1
+Host: www.soap-shop.com
+Content-Type: application/soap+xml; charset=utf-8
+Content-Length: nnn
+<?xml version="1.0"?>
+<soap:Envelope
+	xmlns:soap="http://www.w3.org/2003/05/soap-envelope/"
+soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">
+	<soap:Body
+		xmlns:m="http://www.soap-shop.com/inventory">
+		<m:GetInventoryPrice>
+			<m:InventoryName>ThebestSOAP</m:InventoryName>
+		</m:GetInventoryPrice>
+	</soap:Body>
+</soap:Envelope>
+```
+
+**SOAP Response**
+```http
+HTTP/1.1 200 OK
+Content-Type: application/soap+xml; charset=utf-8
+Content-Length: nnn
+(continued)
+
+<?xml version="1.0"?>
+<soap:Envelope
+	xmlns:soap="http://www.w3.org/2003/05/soap-envelope/"
+soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">
+	<soap:Body xmlns:m="http://www.soap-shop.com/inventory">
+		<soap:Fault>
+			<faultcode>soap:VersionMismatch</faultcode>
+			<faultstring, xml:lang='en">
+Name does not match Inventory record
+			</faultstring>
+		</soap:Fault
+	</soap:Body>
+</soap:Envelope>
+```
+SOAP API messages have 4 parts - Envelope , header (both are necessary) and body , fault (which are optional)
+
+- **Envelope** is an XML tag which signifies it is the beginning of the SOAP message.
+- The **header** can be used to process a message; in this example, the Content-Type request header lets the SOAP provider know the type of content being sent in the POST request (application/soap+xml)
+- The **body** is the primary payload of the XML message, meaning it contains the data sent to the application.
+- The **fault** is an optional part of a SOAP response that can be used to provide error messaging
