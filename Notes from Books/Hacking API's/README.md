@@ -1,4 +1,4 @@
-## Chapter 2 : THE ANATOMY OF WEB APIS
+# Chapter 2 : THE ANATOMY OF WEB APIS
 
 **Singleton resource:**  represents a unique object (`/api/user/{user_id}`)
 
@@ -6,23 +6,23 @@
 
 **C.R.U.D** stands for **Create, Read, Update, Delete**
 
-### API Types -
+## API Types -
 
 1. RESTful API
 2. GraphQL API
 
-#### RESTful API:
+### RESTful API:
 
 - Designed to improve inefficiencies of SOAP.
 - REST API's are stateless. Hence the client tneeds to send send all the required authorization token/key to make a request.
 - REST API's have some commmon headers like **Authorization[_Basic- Uses Base64 encoded creds, Bearer- Uses API token, AWS-HMAC-SHA256 is a AWS authorization type_], Content-Type, Middleware (X) headers**.
 
-#### GraphQL
+### GraphQL
 
 - GraphQL is Query-centric.
 - In REST API's, a specific endpoint will return all the data it is supposed to but incase of GraphQL we can query specifically the info that we want.
 
-#### SOAP API
+### SOAP API
 
 - SOAP is one of the older web APIs that works over HTTP, SMTP, TCP, and UDP, it was primarily designed for use over HTTP. When SOAP is used over HTTP, the requests are all made using _HTTP POST_.
 **SOAP Request -**
@@ -71,3 +71,36 @@ SOAP API messages have 4 parts - Envelope , header (both are necessary) and body
 - The **header** can be used to process a message; in this example, the Content-Type request header lets the SOAP provider know the type of content being sent in the POST request (application/soap+xml)
 - The **body** is the primary payload of the XML message, meaning it contains the data sent to the application.
 - The **fault** is an optional part of a SOAP response that can be used to provide error messaging
+
+### API authentication
+
+- [ ] Basic Auth [`base64(username:password)`]
+- [ ] API keys
+- [ ] JWT
+- [ ] HMAC - It is primarily used by AWS. [`HMAC(data+secret_key)`]
+- [ ] OAUTH token
+
+# CHAPTER 6 : ATTACKING API's
+
+## Discovering API's -
+
+### Passive Recon
+
+- [ ] Google dorking
+- [ ] Shodan
+- [ ] Amass
+- [ ] Exposed info in github
+
+### Active Recon
+
+- [ ] NMAP
+- [ ] robots.txt
+- [ ] Dev tools (JS files & XHR requests)
+- [ ] Bruteforce with assetnote wordlist
+- [ ] Kiterunner [`kr scan http://192.168.195.132:8090 -w ~/api/wordlists/data/kiterunner/routes-large.kite`]
+
+## Endpoint Analysis -
+
+
+
+
