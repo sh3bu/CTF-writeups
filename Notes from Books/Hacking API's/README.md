@@ -101,6 +101,16 @@ SOAP API messages have 4 parts - Envelope , header (both are necessary) and body
 
 ## Endpoint Analysis -
 
+- [ ] Find hidden endpoints using kiterunner.
+- [ ] Analyze functionality of each endpoint.
+- [ ] Testing intended use & try to test unintended way.
+- [ ] Perform Priviledged actions
+- [ ] Finding info disclosures, verbose errors, unencrypted communication, excessive dat exposure, business logic flaws.
 
+## Attacking API authentication
+
+- [ ] Password bruteforce attack
+- [ ] 2FA and password reset bruteforce attack
+- [ ] JWT abuse
 
 
