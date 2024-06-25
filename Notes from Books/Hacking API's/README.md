@@ -80,7 +80,7 @@ SOAP API messages have 4 parts - Envelope , header (both are necessary) and body
 - [ ] HMAC - It is primarily used by AWS. [`HMAC(data+secret_key)`]
 - [ ] OAUTH token
 
-# CHAPTER 6 : ATTACKING API's
+# PART III : ATTACKING API's
 
 ## Discovering API's -
 
@@ -111,6 +111,8 @@ SOAP API messages have 4 parts - Envelope , header (both are necessary) and body
 
 - [ ] Password bruteforce attack
 - [ ] 2FA and password reset bruteforce attack
-- [ ] JWT abuse
+- [ ] JWT abuse [None attack, Alg switch attack, JWT secret crack ]
 
+## API fuzing
 
+- [ ] Password bruteforce attack
