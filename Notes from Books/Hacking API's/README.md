@@ -115,4 +115,12 @@ SOAP API messages have 4 parts - Envelope , header (both are necessary) and body
 
 ## API fuzing
 
-- [ ] Password bruteforce attack
+- [ ] Detect Anomalies
+- [ ] Fuzzing Deep & Wide
+- [ ] Fuzzing to test for Improper Assests Management [v1, v2, v3, test, uat, dev, internal, mobile]
+- [ ] Fuzzing deeper to bypass Input Sanitization
+- [ ] Fuzzzing for direcotry traversal
+
+## Exploiting API Authorization
+
+- [ ] BOLA & BFLA
