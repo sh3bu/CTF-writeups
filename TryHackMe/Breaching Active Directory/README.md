@@ -370,3 +370,59 @@ Session completed
 > 
 > 3. What is the value of the cracked password associated with the challenge that was captured? - `FPassword1!`
 
+## Task 6 : Microsoft Deployment Toolkit
+
+## Task 7 : Configuration Files
+
+Configuration files are an excellent avenue to explore in an attempt to recover AD credentials. Depending on the host that was breached, various configuration files may be of value for enumeration: 
+
+1. Web application config files
+2. Service configuration files
+3. Registry keys
+4. Centrally deployed applications
+
+### Configuration File Credentials -
+
+Centrally Deployed applications need a method to authenticate to the domain during both the installation and execution phases. An example of such as application is **McAfee Enterprise Endpoint Security**.
+
+- **McAfee embeds the credentials used during installation to connect back to the orchestrator** in a file called `ma.db`.
+- This database file can be retrieved and read with local access to the host to recover the associated AD service account.
+
+Using the creds provided, SSH into the machine .
+
+```powershell
+thm@THMJMP1 C:\ProgramData\McAfee\Agent\DB>dir 
+ Volume in drive C is Windows 
+ Volume Serial Number is 1634-22A9
+
+ Directory of C:\ProgramData\McAfee\Agent\DB
+
+03/28/2022  05:19 AM    <DIR>          .
+03/28/2022  05:19 AM    <DIR>          ..
+03/05/2022  07:45 PM           120,832 ma.db
+               1 File(s)        120,832 bytes
+               2 Dir(s)  50,772,037,632 bytes free
+```
+
+Transfer the `ma.db` to our local machine & open it using **sqlitebrowser**
+
+![image](https://github.com/user-attachments/assets/1d3a3497-be1d-4def-b232-07515bd342d2)
+
+THe **_AUTH_PASSWORD_** value for the user `svcAV` is encrypted as McAfee encrypts this field with a known key - `jWbTyS7BL1Hj7PkO5Di`
+
+We can crack it using this python script - https://raw.githubusercontent.com/funoverip/mcafee-sitelist-pwd-decryption/master/mcafee_sitelist_pwd_decrypt.py 
+
+I had a hard time in making this script run without dependency errors, so I switched back to attackbox.
+
+![image](https://github.com/user-attachments/assets/1395acc6-a4e9-4ff5-b49f-21a81ca6ba7e)
+
+> 1. What type of files often contain stored credentials on hosts? - `configuration files`
+>
+> 2. What is the name of the McAfee database that stores configuration including credentials used to connect to the orchestrator? - `ma.db`
+>
+> 3. What table in this database stores the credentials of the orchestrator? - `AGENT_REPOSITORIES`
+> 
+> 4. What is the username of the AD account associated with the McAfee service? - `svcAC`
+>
+> 5. What is the password of the AD account associated with the McAfee service? - `MyStrongPassword!`
+
