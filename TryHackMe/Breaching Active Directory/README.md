@@ -372,6 +372,65 @@ Session completed
 
 ## Task 6 : Microsoft Deployment Toolkit
 
+### MDT and SCCM -
+
+- **Microsoft Deployment Toolkit (MDT)** is a Microsoft service that assists with automating the deployment of Microsoft Operating Systems (OS). Large organisations use services such as MDT to help deploy new images in their estate more efficiently since the base images can be maintained and updated in a central location.
+- MDT is used for new deployments. Essentially it allows the IT team to preconfigure and manage boot images. Hence, if they need to configure a new machine, they just need to plug in a network cable, and everything happens automatically. They can make various changes to the boot image, such as already installing default software like Office365 and the organisation's anti-virus of choice
+
+- **SCCM** can be seen as almost an expansion and the big brother to MDT. What happens to the software after it is installed? Well, SCCM does this type of patch management.
+- It allows the IT team to review available updates to all software installed across the estate.
+- The team can also test these patches in a sandbox environment to ensure they are stable before centrally deploying them to all domain-joined machines. It makes the life of the IT team significantly easier. 
+
+### PXE Boot-
+
+- Large organisations use PXE boot to allow new devices that are connected to the network to load and install the OS directly over a network connection.
+- PXE boot is usually integrated with DHCP, which means that if DHCP assigns an IP lease, the host is allowed to request the PXE boot image and start the network OS installation process.
+
+![image](https://github.com/user-attachments/assets/3b25cecf-f8dc-46ad-8772-f514883eca34)
+
+- Once the process is performed, the client will use a TFTP connection to download the PXE boot image. We can exploit the PXE boot image for two different purposes:
+
+    Inject a privilege escalation vector, such as a Local Administrator account, to gain Administrative access to the OS once the PXE boot has been completed.
+    Perform password scraping attacks to recover AD credentials used during the install.
+
+_If an attacker can pretend to be a PXE booting client on the network and request an image from MDT via a DHCP request, then the attacker could inject or scrape information from the PXE image during and after the setup process._
+
+Since DHCP is a bit finicky, in this lab we skip the initial steps of this attack :
+
+1. The first piece of information regarding the PXE Boot preconfigure you would have received via DHCP is the IP of the MDT server. In our case, we can recover that information from the TryHackMe network diagram.
+2. The second piece of information you would have received was the names of the BCD files. These files store the information relevant to PXE Boots for the different types of architecture. To retrieve this information, you will need to connect to this website: http://pxeboot.za.tryhackme.com. It will list various BCD files:
+
+![image](https://github.com/user-attachments/assets/7364a452-d689-4e3b-987c-77443835d852)
+
+**Practical :-**
+
+SSH into the machine with the provided credentials.
+
+1. The first step we need to perform is using TFTP and downloading our BCD file to read the configuration of the MDT server.The BCD files are always located in the /Tmp/ directory on the MDT server. We can initiate the TFTP transfer using the following command in our SSH session
+
+![image](https://github.com/user-attachments/assets/c2dabfc1-82c9-47fa-8539-d8fb5244140f)
+
+2. With the BCD file now recovered, we will be using powerpxe to read its contents. Powerpxe is a PowerShell script that automatically performs this type of attack but usually with varying results, so it is better to perform a manual approach. We will use the Get-WimFile function of powerpxe to recover the locations of the PXE Boot images from the BCD file:
+
+![image](https://github.com/user-attachments/assets/e57d9954-1c2a-4dba-af8e-3076748add4b)
+
+3. WIM files are bootable images in the Windows Imaging Format (WIM). Now that we have the location of the PXE Boot image, we can again use TFTP to download this image:
+
+![image](https://github.com/user-attachments/assets/61553123-e29a-48d2-aab8-38d25da0f83b)
+
+4. Recover the Credentials from a PXE Boot Image.
+
+![image](https://github.com/user-attachments/assets/d2f9fc2c-a7a0-46a0-8017-19db01209adc)
+
+> 1. What Microsoft tool is used to create and host PXE Boot images in organisations? - `Microsoft Deployment Toolkit`
+>
+> 2. What network protocol is used for recovery of files from the MDT server? - `TFTP`
+>
+> 3. What is the username associated with the account that was stored in the PXE Boot image? - `svcMDT`
+>
+> 4. What is the password associated with the account that was stored in the PXE Boot image? - `PXEBootSecure1@`
+
+
 ## Task 7 : Configuration Files
 
 Configuration files are an excellent avenue to explore in an attempt to recover AD credentials. Depending on the host that was breached, various configuration files may be of value for enumeration: 
@@ -426,3 +485,4 @@ I had a hard time in making this script run without dependency errors, so I swit
 >
 > 5. What is the password of the AD account associated with the McAfee service? - `MyStrongPassword!`
 
+![image](https://github.com/user-attachments/assets/7a1587a4-011b-4e02-be5d-8a9153e29989)
