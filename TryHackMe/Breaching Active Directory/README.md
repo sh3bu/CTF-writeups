@@ -148,7 +148,7 @@ A network printer with web interface is available at http://printer.za.tryhackme
 
 ![image](https://github.com/user-attachments/assets/2d2e289e-08f1-4bcc-b5d5-30f72d5a078c)
 
-Viewing page source , we can see that the username is visible bu the password is hidden.
+Viewing page source , we can see that the username is visible but the password is hidden.
 
 ![image](https://github.com/user-attachments/assets/f36d2fc4-10e8-4621-ab84-01b7e2aacf50)
 
